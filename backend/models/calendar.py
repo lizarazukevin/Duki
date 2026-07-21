@@ -64,3 +64,27 @@ class CalendarSyncWindow:
 class CalendarSyncSummary:
     events_upserted: int
     events_cancelled: int
+
+
+@dataclass(frozen=True, slots=True)
+class StoredCalendarEvent:
+    id: UUID
+    event: CalendarEvent
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarEventCursor:
+    start_time: datetime
+    event_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarEventPage:
+    items: tuple[StoredCalendarEvent, ...]
+    next_cursor: CalendarEventCursor | None
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarEventListResult:
+    items: tuple[StoredCalendarEvent, ...]
+    next_cursor: str | None

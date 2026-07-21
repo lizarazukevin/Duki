@@ -65,6 +65,11 @@ class IdentityProviderUnavailableError(DukiError):
     status_code = 503
 
 
+class InvalidPaginationCursorError(DukiError):
+    code = "invalid_pagination_cursor"
+    status_code = 422
+
+
 class PersistenceError(DukiError):
     code = "persistence_unavailable"
     status_code = 503

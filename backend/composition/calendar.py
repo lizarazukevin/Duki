@@ -9,6 +9,7 @@ from backend.config import Settings
 from backend.errors import CalendarConfigurationError, FeatureDisabledError
 from backend.repositories.postgres.supabase_auth import SupabaseAuthRepository
 from backend.repositories.postgres.supabase_calendar import SupabaseCalendarRepository
+from backend.services.calendar_query_service import CalendarQueryService
 from backend.services.calendar_sync_service import CalendarSyncService
 
 
@@ -43,4 +44,21 @@ def provide_calendar_sync_service(request: Request) -> CalendarSyncService:
             supabase_url=settings.supabase_url,
             secret_key=settings.supabase_secret_key,
         ),
+    )
+
+
+def provide_calendar_query_service(request: Request) -> CalendarQueryService:
+    """Compose private cached-calendar reads through PostgREST."""
+    settings = cast(Settings, request.app.state.settings)
+    if not settings.calendar_sync_enabled:
+        raise FeatureDisabledError("Calendar synchronization is not enabled")
+    if not settings.supabase_url or not settings.supabase_secret_key:
+        raise CalendarConfigurationError("Calendar persistence is not configured")
+    http_client = cast(httpx.AsyncClient, request.app.state.http_client)
+    return CalendarQueryService(
+        calendar_repository=SupabaseCalendarRepository(
+            http_client=http_client,
+            supabase_url=settings.supabase_url,
+            secret_key=settings.supabase_secret_key,
+        )
     )
