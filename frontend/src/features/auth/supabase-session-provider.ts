@@ -1,6 +1,10 @@
 import "client-only";
 
-import type { SessionProvider } from "@/features/auth/session-provider";
+import type {
+  SessionIdentity,
+  SessionProvider,
+  SessionTokens,
+} from "@/features/auth/session-provider";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export class SupabaseSessionProvider implements SessionProvider {
@@ -13,6 +17,28 @@ export class SupabaseSessionProvider implements SessionProvider {
       });
     }
     return data.session?.access_token ?? null;
+  }
+
+  async getIdentity(): Promise<SessionIdentity | null> {
+    const { data, error } = await createSupabaseBrowserClient().auth.getUser();
+    if (error || !data.user?.email) {
+      return null;
+    }
+    const displayName = data.user.user_metadata.full_name;
+    return {
+      displayName: typeof displayName === "string" ? displayName : null,
+      email: data.user.email,
+    };
+  }
+
+  async setSession(tokens: SessionTokens): Promise<void> {
+    const { error } = await createSupabaseBrowserClient().auth.setSession({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+    });
+    if (error) {
+      throw new Error("The new session could not be saved", { cause: error });
+    }
   }
 
   async signOut(): Promise<void> {

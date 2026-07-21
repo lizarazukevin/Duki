@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "engines": {
     "node": "24.x"
   },
@@ -9,6 +10,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "node --test src/features/auth/pkce.test.mjs",
     "lint": "biome check",
     "format": "biome format --write",
     "typecheck": "tsc --noEmit",

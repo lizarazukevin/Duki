@@ -8,6 +8,7 @@ import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from backend.config import Settings, get_settings
@@ -56,6 +57,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         docs_url=docs_url,
         redoc_url=None,
         lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(resolved_settings.allowed_cors_origins),
+        allow_credentials=False,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
     )
     app.state.settings = resolved_settings
     app.include_router(health_router)

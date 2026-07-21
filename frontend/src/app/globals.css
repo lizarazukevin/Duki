@@ -243,6 +243,242 @@ a {
   line-height: 1.45;
 }
 
+.auth-message {
+  min-height: 1em;
+  margin: 8px 0 0;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.callback-page,
+.home-loading {
+  display: flex;
+  min-height: 100svh;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8vw;
+}
+
+.callback-page h1 {
+  max-width: 850px;
+  margin: 0 0 32px;
+  font-size: clamp(3rem, 8vw, 8rem);
+  letter-spacing: -0.07em;
+  line-height: 0.88;
+}
+
+.home-page {
+  width: min(100%, 560px);
+  min-height: 100svh;
+  margin: 0 auto;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 22px 22px 92px;
+}
+
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  border-top: 1px solid var(--signal);
+  padding-top: 12px;
+}
+
+.home-header p,
+.home-header h1,
+.duck-dialogue p,
+.section-heading p,
+.section-heading h2 {
+  margin: 0;
+}
+
+.home-kicker,
+.section-heading p {
+  color: var(--signal);
+  font-size: 0.62rem;
+  font-weight: 740;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-header h1 {
+  margin-top: 5px;
+  font-size: 1.45rem;
+  letter-spacing: -0.045em;
+}
+
+.home-header button {
+  border: 0;
+  border-bottom: 1px solid var(--paper);
+  background: transparent;
+  color: var(--paper);
+  cursor: pointer;
+  padding: 2px 0;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+}
+
+.duck-dialogue {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  min-height: 430px;
+  padding-top: 42px;
+}
+
+.thought-bubble {
+  position: relative;
+  z-index: 2;
+  width: min(72%, 330px);
+  justify-self: end;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 15px 17px;
+  font-size: 0.85rem;
+  font-weight: 630;
+  line-height: 1.3;
+}
+
+.thought-bubble::after {
+  position: absolute;
+  right: 28px;
+  bottom: -9px;
+  width: 18px;
+  height: 18px;
+  border-right: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  background: var(--paper);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.home-duck-stage {
+  width: 285px;
+  height: 285px;
+  margin-top: -15px;
+  overflow: hidden;
+  border: 1px solid var(--signal);
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.home-duck {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 40% 66%;
+}
+
+.duck-dialogue > p {
+  align-self: end;
+  color: var(--signal);
+  font-size: 0.85rem;
+  font-weight: 630;
+}
+
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid var(--paper);
+  border-bottom: 1px solid var(--paper);
+}
+
+.quick-stats div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 8px;
+}
+
+.quick-stats div + div {
+  border-left: 1px solid var(--paper);
+}
+
+.quick-stats strong {
+  color: var(--signal);
+  font-size: 1.25rem;
+}
+
+.quick-stats span {
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.immediate-work {
+  margin-top: 38px;
+}
+
+.section-heading h2 {
+  margin-top: 3px;
+  font-size: 2rem;
+  letter-spacing: -0.055em;
+}
+
+.immediate-work ol {
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.immediate-work li {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border-top: 1px solid var(--paper);
+  padding: 15px 0;
+}
+
+.immediate-work li span,
+.immediate-work li small {
+  color: var(--signal);
+  font-size: 0.65rem;
+}
+
+.empty-tasks {
+  border-top: 1px solid var(--paper);
+  margin: 18px 0 0;
+  padding: 16px 0;
+  font-size: 0.85rem;
+}
+
+.home-nav {
+  position: fixed;
+  z-index: 4;
+  bottom: 0;
+  left: 50%;
+  display: grid;
+  width: min(100%, 560px);
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--ink);
+  background: var(--signal);
+  color: var(--ink);
+  transform: translateX(-50%);
+}
+
+.home-nav a,
+.home-nav button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 18px 3px;
+  text-align: center;
+  text-decoration: none;
+  font-size: 0.6rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.home-nav a {
+  background: var(--ink);
+  color: var(--signal);
+}
+
+.home-nav button:disabled {
+  opacity: 1;
+}
+
 .entry-footer {
   display: grid;
   grid-template-columns: repeat(3, auto) 1fr;

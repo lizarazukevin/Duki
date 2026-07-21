@@ -38,6 +38,7 @@ class Settings:
     openai_task_extraction_model: str
     credential_encryption_keys: tuple[str, ...]
     allowed_oauth_redirect_hosts: frozenset[str]
+    allowed_cors_origins: tuple[str, ...]
 
     @property
     def is_local(self) -> bool:
@@ -94,5 +95,13 @@ def get_settings() -> Settings:
             host.strip().lower()
             for host in os.getenv("ALLOWED_OAUTH_REDIRECT_HOSTS", "localhost,127.0.0.1").split(",")
             if host.strip()
+        ),
+        allowed_cors_origins=tuple(
+            origin.strip().rstrip("/")
+            for origin in os.getenv(
+                "ALLOWED_CORS_ORIGINS",
+                "http://localhost:3000,http://127.0.0.1:3000",
+            ).split(",")
+            if origin.strip()
         ),
     )

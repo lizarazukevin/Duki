@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { GoogleSignInButton } from "@/features/auth/google-sign-in-button";
 import { PRODUCT_NAME } from "@/lib/constants";
 
 export default function Home() {
@@ -51,17 +52,7 @@ export default function Home() {
             Connect Google to find open time and protect the commitments that
             already matter. Duky asks before changing your tasks.
           </p>
-          <div className="sign-in-action">
-            <button className="google-button" type="button">
-              <span aria-hidden="true" className="google-mark">
-                G
-              </span>
-              <span>Continue with Google</span>
-              <span aria-hidden="true" className="button-arrow">
-                ↗
-              </span>
-            </button>
-          </div>
+          <GoogleSignInButton />
           <p className="privacy-note">
             Calendar access is private to your account. You can disconnect at
             any time.
