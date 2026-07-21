@@ -1,10 +1,10 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import type { SessionIdentity } from "@/features/auth/session-provider";
 import { SupabaseSessionProvider } from "@/features/auth/supabase-session-provider";
+import { InteractiveDuck } from "@/features/home/interactive-duck";
 import { createApiClient } from "@/lib/api/client";
 
 interface TaskNode {
@@ -86,14 +86,7 @@ export function AuthenticatedHome() {
       <section className="duck-dialogue" aria-label="Duky's daily note">
         <div className="thought-bubble">{duckMessage}</div>
         <div className="home-duck-stage">
-          <Image
-            alt="Duky, your rubber duck planning partner"
-            className="home-duck"
-            height={1254}
-            priority
-            src="/images/duky-3d.png"
-            width={1254}
-          />
+          <InteractiveDuck />
         </div>
         <p>One honest next step is enough.</p>
       </section>
