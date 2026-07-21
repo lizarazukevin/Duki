@@ -73,3 +73,8 @@ class PersistenceError(DukiError):
 class RedirectNotAllowedError(DukiError):
     code = "redirect_not_allowed"
     status_code = 422
+
+
+class SessionRefreshError(DukiError):
+    code = "session_refresh_failed"
+    status_code = 401

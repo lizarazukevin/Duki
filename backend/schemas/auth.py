@@ -40,6 +40,10 @@ class SessionExchangeResponse(BaseModel):
     user_id: UUID
 
 
+class SessionRefreshRequest(BaseModel):
+    refresh_token: Annotated[str, Field(min_length=1, max_length=4096)]
+
+
 class SessionResponse(BaseModel):
     user_id: UUID
     email: str

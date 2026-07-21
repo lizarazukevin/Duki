@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlencode
 from uuid import UUID
@@ -8,14 +8,16 @@ import httpx
 from backend.adapters.auth.base import (
     AuthorizationCodeExchangeAdapter,
     IdentityAuthorizationAdapter,
+    SessionRefreshAdapter,
     SessionValidationAdapter,
 )
 from backend.errors import (
     AuthenticationError,
     AuthorizationExchangeError,
     IdentityProviderUnavailableError,
+    SessionRefreshError,
 )
-from backend.models.auth import AuthenticatedUser, ExchangedSession
+from backend.models.auth import AuthenticatedUser, ExchangedSession, SessionTokens
 
 GOOGLE_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar"
 
@@ -37,6 +39,32 @@ def _parse_authenticated_user(payload: dict[str, Any]) -> AuthenticatedUser:
 
 def _optional_string(value: object) -> str | None:
     return value if isinstance(value, str) else None
+
+
+def _parse_session_tokens(payload: dict[str, Any]) -> SessionTokens:
+    user_payload = payload["user"]
+    if not isinstance(user_payload, dict):
+        raise TypeError("Invalid user payload")
+    access_token = payload["access_token"]
+    refresh_token = payload["refresh_token"]
+    if not isinstance(access_token, str) or not access_token:
+        raise ValueError("Missing access token")
+    if not isinstance(refresh_token, str) or not refresh_token:
+        raise ValueError("Missing refresh token")
+    expires_at = payload.get("expires_at")
+    if isinstance(expires_at, int | float) and not isinstance(expires_at, bool):
+        expiry = datetime.fromtimestamp(expires_at, UTC)
+    else:
+        expires_in = payload.get("expires_in")
+        if not isinstance(expires_in, int) or isinstance(expires_in, bool) or expires_in <= 0:
+            raise TypeError("Invalid session expiry")
+        expiry = datetime.now(UTC) + timedelta(seconds=expires_in)
+    return SessionTokens(
+        user=_parse_authenticated_user(user_payload),
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_at=expiry,
+    )
 
 
 class SupabaseGoogleAuthorizationAdapter(IdentityAuthorizationAdapter):
@@ -153,16 +181,9 @@ class SupabaseAuthorizationCodeExchangeAdapter(AuthorizationCodeExchangeAdapter)
 
     @staticmethod
     def _parse_session(payload: dict[str, Any]) -> ExchangedSession:
-        user_payload = payload["user"]
-        if not isinstance(user_payload, dict):
-            raise TypeError("Invalid user payload")
-        access_token = payload["access_token"]
-        refresh_token = payload["refresh_token"]
+        session = _parse_session_tokens(payload)
         provider_access_token = payload.get("provider_token")
         provider_refresh_token = payload.get("provider_refresh_token")
-        expires_at = payload["expires_at"]
-        if not all(isinstance(value, str) and value for value in (access_token, refresh_token)):
-            raise ValueError("Missing session token")
         if (
             not isinstance(provider_access_token, str)
             or not provider_access_token
@@ -172,13 +193,51 @@ class SupabaseAuthorizationCodeExchangeAdapter(AuthorizationCodeExchangeAdapter)
             raise AuthorizationExchangeError(
                 "Google did not return offline credentials; authorize again"
             )
-        if not isinstance(expires_at, int | float):
-            raise TypeError("Invalid session expiry")
         return ExchangedSession(
-            user=_parse_authenticated_user(user_payload),
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_at=datetime.fromtimestamp(expires_at, UTC),
+            user=session.user,
+            access_token=session.access_token,
+            refresh_token=session.refresh_token,
+            expires_at=session.expires_at,
             provider_access_token=provider_access_token,
             provider_refresh_token=provider_refresh_token,
         )
+
+
+class SupabaseSessionRefreshAdapter(SessionRefreshAdapter):
+    """Rotate a Supabase refresh token and normalize the replacement session."""
+
+    def __init__(
+        self,
+        http_client: httpx.AsyncClient,
+        supabase_url: str,
+        publishable_key: str,
+    ) -> None:
+        self._http_client = http_client
+        self._token_url = f"{supabase_url.rstrip('/')}/auth/v1/token"
+        self._publishable_key = publishable_key
+
+    async def refresh_session(self, refresh_token: str) -> SessionTokens:
+        try:
+            response = await self._http_client.post(
+                self._token_url,
+                params={"grant_type": "refresh_token"},
+                headers={"apikey": self._publishable_key},
+                json={"refresh_token": refresh_token},
+            )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as error:
+            raise IdentityProviderUnavailableError(
+                "Session refresh is temporarily unavailable"
+            ) from error
+        if response.status_code in {400, 401, 403}:
+            raise SessionRefreshError("The refresh token is invalid or already used")
+        if response.status_code >= 400:
+            raise IdentityProviderUnavailableError("Session refresh is temporarily unavailable")
+        try:
+            payload: object = response.json()
+            if not isinstance(payload, dict):
+                raise TypeError("Invalid session payload")
+            return _parse_session_tokens(payload)
+        except (KeyError, TypeError, ValueError, OverflowError) as error:
+            raise IdentityProviderUnavailableError(
+                "The identity provider returned an invalid session"
+            ) from error

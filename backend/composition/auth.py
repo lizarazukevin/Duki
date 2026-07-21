@@ -7,6 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from backend.adapters.auth.supabase import (
     SupabaseAuthorizationCodeExchangeAdapter,
     SupabaseGoogleAuthorizationAdapter,
+    SupabaseSessionRefreshAdapter,
     SupabaseSessionValidationAdapter,
 )
 from backend.adapters.security.fernet import FernetCredentialCipher
@@ -22,6 +23,7 @@ from backend.services.identity_authorization_service import (
     IdentityAuthorizationService,
 )
 from backend.services.session_exchange_service import SessionExchangeService
+from backend.services.session_refresh_service import SessionRefreshService
 from backend.services.session_validation_service import SessionValidationService
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -84,6 +86,21 @@ def provide_session_exchange_service(request: Request) -> SessionExchangeService
             secret_key=settings.supabase_secret_key,
             credential_cipher=FernetCredentialCipher(settings.credential_encryption_keys),
         ),
+    )
+
+
+def provide_session_refresh_service(request: Request) -> SessionRefreshService:
+    """Compose Supabase refresh-token rotation using the pooled HTTP client."""
+    settings = _auth_settings(request)
+    if not settings.supabase_publishable_key:
+        raise AuthConfigurationError("Supabase publishable key is not configured")
+    http_client = cast(httpx.AsyncClient, request.app.state.http_client)
+    return SessionRefreshService(
+        refresh_adapter=SupabaseSessionRefreshAdapter(
+            http_client=http_client,
+            supabase_url=settings.supabase_url or "",
+            publishable_key=settings.supabase_publishable_key,
+        )
     )
 
 

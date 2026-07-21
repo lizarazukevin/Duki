@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from backend.composition.auth import (
     provide_identity_authorization_service,
     provide_session_exchange_service,
+    provide_session_refresh_service,
     require_current_user,
 )
 from backend.models.auth import AuthenticatedUser
@@ -13,12 +14,14 @@ from backend.schemas.auth import (
     GoogleAuthorizeResponse,
     SessionExchangeRequest,
     SessionExchangeResponse,
+    SessionRefreshRequest,
     SessionResponse,
 )
 from backend.services.identity_authorization_service import (
     IdentityAuthorizationService,
 )
 from backend.services.session_exchange_service import SessionExchangeService
+from backend.services.session_refresh_service import SessionRefreshService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -50,6 +53,23 @@ async def exchange_session(
         auth_code=body.auth_code,
         auth_code_verifier=body.auth_code_verifier,
     )
+    return SessionExchangeResponse(
+        access_token=session.access_token,
+        refresh_token=session.refresh_token,
+        expires_at=session.expires_at,
+        user_id=session.user.id,
+    )
+
+
+@router.post("/sessions/refresh", response_model=SessionExchangeResponse)
+async def refresh_session(
+    body: SessionRefreshRequest,
+    service: Annotated[
+        SessionRefreshService,
+        Depends(provide_session_refresh_service),
+    ],
+) -> SessionExchangeResponse:
+    session = await service.refresh(body.refresh_token)
     return SessionExchangeResponse(
         access_token=session.access_token,
         refresh_token=session.refresh_token,
