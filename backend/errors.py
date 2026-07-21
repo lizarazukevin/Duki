@@ -10,8 +10,36 @@ class TranscriptionError(DukiError):
     status_code = 503
 
 
+class TranscriptionRateLimitError(TranscriptionError):
+    code = "transcription_rate_limited"
+
+
+class UnsupportedAudioTypeError(TranscriptionError):
+    code = "unsupported_audio_type"
+    status_code = 422
+
+
+class AudioTooLargeError(TranscriptionError):
+    code = "audio_too_large"
+    status_code = 422
+
+
 class TaskExtractionError(DukiError):
     code = "task_extraction_failed"
+    status_code = 503
+
+
+class TaskExtractionRateLimitError(TaskExtractionError):
+    code = "task_extraction_rate_limited"
+
+
+class NoTasksExtractedError(TaskExtractionError):
+    code = "no_tasks_extracted"
+    status_code = 422
+
+
+class OpenAIConfigurationError(DukiError):
+    code = "openai_configuration_error"
     status_code = 503
 
 

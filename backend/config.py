@@ -4,6 +4,8 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
+from backend.constants import DEFAULT_TASK_EXTRACTION_MODEL, DEFAULT_TRANSCRIPTION_MODEL
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -16,6 +18,9 @@ class Settings:
     supabase_secret_key: str | None
     google_oauth_client_id: str | None
     google_oauth_client_secret: str | None
+    openai_api_key: str | None
+    openai_transcription_model: str
+    openai_task_extraction_model: str
     credential_encryption_keys: tuple[str, ...]
     allowed_oauth_redirect_hosts: frozenset[str]
 
@@ -40,6 +45,13 @@ def get_settings() -> Settings:
         supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY"),
         google_oauth_client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
         google_oauth_client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        openai_transcription_model=os.getenv(
+            "OPENAI_TRANSCRIPTION_MODEL", DEFAULT_TRANSCRIPTION_MODEL
+        ),
+        openai_task_extraction_model=os.getenv(
+            "OPENAI_TASK_EXTRACTION_MODEL", DEFAULT_TASK_EXTRACTION_MODEL
+        ),
         credential_encryption_keys=tuple(
             key.strip()
             for key in os.getenv("CREDENTIAL_ENCRYPTION_KEYS", "").split(",")
