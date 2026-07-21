@@ -4,7 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from backend.composition.auth import require_current_user
-from backend.composition.tasks import provide_task_service
+from backend.composition.tasks import provide_task_goal_service, provide_task_service
 from backend.models.auth import AuthenticatedUser
 from backend.schemas.tasks import (
     TaskCreateRequest,
@@ -13,6 +13,7 @@ from backend.schemas.tasks import (
     TaskTreeResponse,
     TaskUpdateRequest,
 )
+from backend.services.task_goal_service import TaskGoalService
 from backend.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -67,4 +68,26 @@ async def delete_task(
     service: Annotated[TaskService, Depends(provide_task_service)],
 ) -> Response:
     await service.delete_task(user.id, task_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/{task_id}/goals/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def attach_goal(
+    task_id: UUID,
+    goal_id: UUID,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[TaskGoalService, Depends(provide_task_goal_service)],
+) -> Response:
+    await service.attach_goal(user.id, task_id, goal_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{task_id}/goals/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def detach_goal(
+    task_id: UUID,
+    goal_id: UUID,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[TaskGoalService, Depends(provide_task_goal_service)],
+) -> Response:
+    await service.detach_goal(user.id, task_id, goal_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
