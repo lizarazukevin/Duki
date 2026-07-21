@@ -10,6 +10,11 @@ class AuthConfigurationError(DukiError):
     status_code = 503
 
 
+class CalendarPersistenceError(DukiError):
+    code = "calendar_persistence_unavailable"
+    status_code = 503
+
+
 class AuthenticationError(DukiError):
     code = "invalid_session"
     status_code = 401
