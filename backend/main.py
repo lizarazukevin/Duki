@@ -15,6 +15,7 @@ from backend.constants import API_TITLE, API_V1_PREFIX, LOGGER_NAME
 from backend.errors import DukiError
 from backend.routers.auth import router as auth_router
 from backend.routers.calendar_events import router as calendar_events_router
+from backend.routers.calendar_free_blocks import router as calendar_free_blocks_router
 from backend.routers.duck_sessions import router as duck_sessions_router
 from backend.routers.goals import router as goals_router
 from backend.routers.health import router as health_router
@@ -59,6 +60,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(health_router)
     app.include_router(auth_router, prefix=API_V1_PREFIX)
     app.include_router(calendar_events_router, prefix=API_V1_PREFIX)
+    app.include_router(calendar_free_blocks_router, prefix=API_V1_PREFIX)
     app.include_router(duck_sessions_router, prefix=API_V1_PREFIX)
     app.include_router(tasks_router, prefix=API_V1_PREFIX)
     app.include_router(goals_router, prefix=API_V1_PREFIX)

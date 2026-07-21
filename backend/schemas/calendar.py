@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, model_validator
 from backend.models.calendar import (
     CalendarEventStatus,
     CalendarEventTransparency,
+    CalendarFreeBlock,
     CalendarSyncWindow,
     StoredCalendarEvent,
 )
@@ -75,3 +76,35 @@ class CalendarEventResponse(BaseModel):
 class CalendarEventListResponse(BaseModel):
     items: list[CalendarEventResponse]
     next_cursor: str | None
+
+
+class CalendarFreeBlockQuery(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    minimum_minutes: int = Field(default=15, ge=1, le=480)
+
+    @model_validator(mode="after")
+    def validate_window(self) -> Self:
+        CalendarSyncWindow(start_time=self.start_time, end_time=self.end_time)
+        return self
+
+    def to_window(self) -> CalendarSyncWindow:
+        return CalendarSyncWindow(start_time=self.start_time, end_time=self.end_time)
+
+
+class CalendarFreeBlockResponse(BaseModel):
+    start_time: datetime
+    end_time: datetime
+    duration_minutes: int
+
+    @classmethod
+    def from_domain(cls, block: CalendarFreeBlock) -> Self:
+        return cls(
+            start_time=block.start_time,
+            end_time=block.end_time,
+            duration_minutes=block.duration_minutes,
+        )
+
+
+class CalendarFreeBlockListResponse(BaseModel):
+    items: list[CalendarFreeBlockResponse]
