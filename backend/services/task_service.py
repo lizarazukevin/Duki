@@ -1,7 +1,9 @@
+from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
-from backend.models.tasks import Task, TaskDetail, TaskDraft, TaskStatus
+from backend.errors import InvalidTaskHierarchyError
+from backend.models.tasks import Task, TaskDetail, TaskDraft, TaskStatus, TaskUpdate
 from backend.repositories.tasks import TaskRepository
 
 
@@ -41,3 +43,48 @@ class TaskService:
         task = await self._task_repository.get_task(user_id, task_id)
         goal_ids = await self._task_repository.list_goal_ids(user_id, task_id)
         return TaskDetail(task=task, goal_ids=goal_ids)
+
+    async def update_task(
+        self,
+        user_id: UUID,
+        task_id: UUID,
+        update: TaskUpdate,
+    ) -> TaskDetail:
+        current_task = await self._task_repository.get_task(user_id, task_id)
+        await self._validate_parent(user_id, task_id, update.parent_task_id)
+        task = replace(
+            current_task,
+            parent_task_id=update.parent_task_id,
+            title=update.title.strip(),
+            description=update.description,
+            category=update.category,
+            status=update.status,
+            estimated_minutes=update.estimated_minutes,
+            initial_easiness_score=update.initial_easiness_score,
+            easiness_source=update.easiness_source,
+            scheduled_date=update.scheduled_date,
+            due_at=update.due_at,
+            position=update.position,
+            updated_at=datetime.now(UTC),
+        )
+        await self._task_repository.update_task(task)
+        goal_ids = await self._task_repository.list_goal_ids(user_id, task_id)
+        return TaskDetail(task=task, goal_ids=goal_ids)
+
+    async def delete_task(self, user_id: UUID, task_id: UUID) -> None:
+        await self._task_repository.delete_task(user_id, task_id)
+
+    async def _validate_parent(
+        self,
+        user_id: UUID,
+        task_id: UUID,
+        parent_task_id: UUID | None,
+    ) -> None:
+        ancestor_id = parent_task_id
+        visited_ids: set[UUID] = set()
+        while ancestor_id is not None:
+            if ancestor_id == task_id or ancestor_id in visited_ids:
+                raise InvalidTaskHierarchyError("Task hierarchy cannot contain a cycle")
+            visited_ids.add(ancestor_id)
+            ancestor = await self._task_repository.get_task(user_id, ancestor_id)
+            ancestor_id = ancestor.parent_task_id

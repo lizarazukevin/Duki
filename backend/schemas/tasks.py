@@ -10,6 +10,7 @@ from backend.models.tasks import (
     TaskDetail,
     TaskDraft,
     TaskStatus,
+    TaskUpdate,
 )
 
 
@@ -91,4 +92,46 @@ class TaskResponse(BaseModel):
             goal_ids=list(detail.goal_ids),
             created_at=task.created_at,
             updated_at=task.updated_at,
+        )
+
+
+class TaskUpdateRequest(BaseModel):
+    parent_task_id: UUID | None
+    title: str = Field(min_length=1, max_length=500)
+    description: str | None = Field(max_length=10000)
+    category: TaskCategory
+    status: TaskStatus
+    estimated_minutes: int | None = Field(gt=0)
+    initial_easiness_score: int | None = Field(ge=1, le=5)
+    easiness_source: EasinessSource | None
+    scheduled_date: date | None
+    due_at: datetime | None
+    position: int = Field(ge=0)
+
+    @field_validator("title")
+    @classmethod
+    def title_must_not_be_blank(cls, title: str) -> str:
+        stripped_title = title.strip()
+        if not stripped_title:
+            raise ValueError("Task title cannot be blank")
+        return stripped_title
+
+    @model_validator(mode="after")
+    def validate_domain_rules(self) -> Self:
+        self.to_domain()
+        return self
+
+    def to_domain(self) -> TaskUpdate:
+        return TaskUpdate(
+            parent_task_id=self.parent_task_id,
+            title=self.title,
+            description=self.description,
+            category=self.category,
+            status=self.status,
+            estimated_minutes=self.estimated_minutes,
+            initial_easiness_score=self.initial_easiness_score,
+            easiness_source=self.easiness_source,
+            scheduled_date=self.scheduled_date,
+            due_at=self.due_at,
+            position=self.position,
         )

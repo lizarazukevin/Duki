@@ -85,6 +85,11 @@ class TaskConfigurationError(DukiError):
     status_code = 503
 
 
+class InvalidTaskHierarchyError(DukiError):
+    code = "invalid_task_hierarchy"
+    status_code = 422
+
+
 class TaskPersistenceError(DukiError):
     code = "task_persistence_unavailable"
     status_code = 503

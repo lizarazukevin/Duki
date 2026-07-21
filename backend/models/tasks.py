@@ -66,20 +66,45 @@ class TaskDraft:
     position: int
 
     def __post_init__(self) -> None:
-        if not self.title.strip() or len(self.title) > 500:
-            raise ValueError("Task title must contain between 1 and 500 characters")
-        if self.description is not None and len(self.description) > 10000:
-            raise ValueError("Task description cannot exceed 10000 characters")
-        if self.estimated_minutes is not None and self.estimated_minutes <= 0:
-            raise ValueError("Task estimate must be positive")
-        if self.initial_easiness_score is not None and not 1 <= self.initial_easiness_score <= 5:
-            raise ValueError("Task easiness score must be between 1 and 5")
-        if (self.initial_easiness_score is None) != (self.easiness_source is None):
-            raise ValueError("Task easiness score and source must be provided together")
-        if self.due_at is not None and self.due_at.utcoffset() is None:
-            raise ValueError("Task due time must include a timezone")
-        if self.position < 0:
-            raise ValueError("Task position cannot be negative")
+        _validate_editable_fields(
+            title=self.title,
+            description=self.description,
+            estimated_minutes=self.estimated_minutes,
+            initial_easiness_score=self.initial_easiness_score,
+            easiness_source=self.easiness_source,
+            due_at=self.due_at,
+            position=self.position,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class TaskUpdate:
+    """Validated editable task state supplied by a full replacement request."""
+
+    parent_task_id: UUID | None
+    title: str
+    description: str | None
+    category: TaskCategory
+    status: TaskStatus
+    estimated_minutes: int | None
+    initial_easiness_score: int | None
+    easiness_source: EasinessSource | None
+    scheduled_date: date | None
+    due_at: datetime | None
+    position: int
+
+    def __post_init__(self) -> None:
+        _validate_editable_fields(
+            title=self.title,
+            description=self.description,
+            estimated_minutes=self.estimated_minutes,
+            initial_easiness_score=self.initial_easiness_score,
+            easiness_source=self.easiness_source,
+            due_at=self.due_at,
+            position=self.position,
+        )
+        if self.status is TaskStatus.COMPLETED:
+            raise ValueError("Task completion requires the dedicated completion workflow")
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,3 +126,29 @@ class Goal:
     completed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+def _validate_editable_fields(
+    *,
+    title: str,
+    description: str | None,
+    estimated_minutes: int | None,
+    initial_easiness_score: int | None,
+    easiness_source: EasinessSource | None,
+    due_at: datetime | None,
+    position: int,
+) -> None:
+    if not title.strip() or len(title) > 500:
+        raise ValueError("Task title must contain between 1 and 500 characters")
+    if description is not None and len(description) > 10000:
+        raise ValueError("Task description cannot exceed 10000 characters")
+    if estimated_minutes is not None and estimated_minutes <= 0:
+        raise ValueError("Task estimate must be positive")
+    if initial_easiness_score is not None and not 1 <= initial_easiness_score <= 5:
+        raise ValueError("Task easiness score must be between 1 and 5")
+    if (initial_easiness_score is None) != (easiness_source is None):
+        raise ValueError("Task easiness score and source must be provided together")
+    if due_at is not None and due_at.utcoffset() is None:
+        raise ValueError("Task due time must include a timezone")
+    if position < 0:
+        raise ValueError("Task position cannot be negative")
