@@ -9,10 +9,15 @@ from backend.models.tasks import EasinessSource, TaskCategory
 EXTRACTION_INSTRUCTIONS = """Convert the user's voice note into one actionable task tree.
 
 Success means:
-- set can_extract=false and tasks=[] when the note contains no actionable work
+- treat intentions, obligations, desired outcomes, and ongoing work as actionable
+- convert ongoing work such as "I'm working on my project" into a continuation task
+- set can_extract=false and tasks=[] only when the note contains no work, intention,
+  obligation, desired outcome, or action to continue
 - otherwise return exactly one root task with parent_local_id=null
 - assign every other task to an existing parent using short unique local IDs
 - preserve the user's intent; do not invent unrelated work
+- ignore greetings, identity details, and incidental present activity unless the user
+  expresses an intention or obligation involving them
 - use work, chore, or personal for category
 - estimate minutes when reasonably inferable, otherwise use null
 - use easiness_source=user only when the user explicitly states difficulty or ease
@@ -52,7 +57,39 @@ class ExtractionPayload(BaseModel):
         return self
 
 
-TASK_TREE_SCHEMA = ExtractionPayload.model_json_schema()
+_NULL_SCHEMA = {"type": "null"}
+_TASK_PROPERTIES = {
+    "local_id": {"type": "string"},
+    "parent_local_id": {"anyOf": [{"type": "string"}, _NULL_SCHEMA]},
+    "title": {"type": "string"},
+    "description": {"anyOf": [{"type": "string"}, _NULL_SCHEMA]},
+    "category": {"type": "string", "enum": ["work", "chore", "personal"]},
+    "estimated_minutes": {"anyOf": [{"type": "integer"}, _NULL_SCHEMA]},
+    "initial_easiness_score": {"anyOf": [{"type": "integer"}, _NULL_SCHEMA]},
+    "easiness_source": {
+        "anyOf": [
+            {"type": "string", "enum": ["user", "inferred"]},
+            _NULL_SCHEMA,
+        ]
+    },
+}
+TASK_TREE_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "properties": {
+        "can_extract": {"type": "boolean"},
+        "tasks": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": _TASK_PROPERTIES,
+                "required": list(_TASK_PROPERTIES),
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["can_extract", "tasks"],
+    "additionalProperties": False,
+}
 
 
 def decode_task_tree(output_text: str) -> ExtractedTaskTree:

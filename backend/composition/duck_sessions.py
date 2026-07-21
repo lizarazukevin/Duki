@@ -3,6 +3,8 @@ from typing import cast
 import httpx
 from fastapi import Request
 
+from backend.adapters.task_extraction.base import TaskExtractionAdapter
+from backend.adapters.task_extraction.groq import GroqTaskExtractionAdapter
 from backend.adapters.task_extraction.openai import OpenAITaskExtractionAdapter
 from backend.adapters.voice.base import VoiceAdapter
 from backend.adapters.voice.groq import GroqVoiceAdapter
@@ -65,19 +67,36 @@ def _voice_adapter(settings: Settings, http_client: httpx.AsyncClient) -> VoiceA
     raise DuckSessionConfigurationError("Transcription provider is not supported")
 
 
-def provide_duck_session_service(request: Request) -> DuckSessionService:
-    """Compose the private voice-to-task workflow from swappable ports."""
-    settings, supabase_url, secret_key, http_client = _session_dependencies(request)
-    if not settings.openai_api_key:
-        raise DuckSessionConfigurationError("Task extraction is not configured")
-
-    return DuckSessionService(
-        voice_adapter=_voice_adapter(settings, http_client),
-        task_extraction_adapter=OpenAITaskExtractionAdapter(
+def _task_extraction_adapter(
+    settings: Settings,
+    http_client: httpx.AsyncClient,
+) -> TaskExtractionAdapter:
+    if settings.task_extraction_provider == "groq":
+        if not settings.groq_api_key:
+            raise DuckSessionConfigurationError("Groq task extraction is not configured")
+        return GroqTaskExtractionAdapter(
+            http_client=http_client,
+            api_key=settings.groq_api_key,
+            model=settings.groq_task_extraction_model,
+        )
+    if settings.task_extraction_provider == "openai":
+        if not settings.openai_api_key:
+            raise DuckSessionConfigurationError("OpenAI task extraction is not configured")
+        return OpenAITaskExtractionAdapter(
             http_client=http_client,
             api_key=settings.openai_api_key,
             model=settings.openai_task_extraction_model,
-        ),
+        )
+    raise DuckSessionConfigurationError("Task extraction provider is not supported")
+
+
+def provide_duck_session_service(request: Request) -> DuckSessionService:
+    """Compose the private voice-to-task workflow from swappable ports."""
+    settings, supabase_url, secret_key, http_client = _session_dependencies(request)
+
+    return DuckSessionService(
+        voice_adapter=_voice_adapter(settings, http_client),
+        task_extraction_adapter=_task_extraction_adapter(settings, http_client),
         session_repository=_session_repository(supabase_url, secret_key, http_client),
         transcript_normalization_service=TranscriptNormalizationService(),
     )

@@ -5,9 +5,11 @@ from dataclasses import dataclass
 from functools import lru_cache
 
 from backend.constants import (
+    DEFAULT_GROQ_TASK_EXTRACTION_MODEL,
     DEFAULT_GROQ_TRANSCRIPTION_MODEL,
     DEFAULT_OPENAI_TASK_EXTRACTION_MODEL,
     DEFAULT_OPENAI_TRANSCRIPTION_MODEL,
+    DEFAULT_TASK_EXTRACTION_PROVIDER,
     DEFAULT_TRANSCRIPTION_PROVIDER,
 )
 
@@ -27,6 +29,8 @@ class Settings:
     transcription_provider: str
     groq_api_key: str | None
     groq_transcription_model: str
+    task_extraction_provider: str
+    groq_task_extraction_model: str
     openai_api_key: str | None
     openai_transcription_model: str
     openai_task_extraction_model: str
@@ -61,6 +65,14 @@ def get_settings() -> Settings:
         groq_api_key=os.getenv("GROQ_API_KEY"),
         groq_transcription_model=os.getenv(
             "GROQ_TRANSCRIPTION_MODEL", DEFAULT_GROQ_TRANSCRIPTION_MODEL
+        ),
+        task_extraction_provider=os.getenv(
+            "TASK_EXTRACTION_PROVIDER", DEFAULT_TASK_EXTRACTION_PROVIDER
+        )
+        .strip()
+        .lower(),
+        groq_task_extraction_model=os.getenv(
+            "GROQ_TASK_EXTRACTION_MODEL", DEFAULT_GROQ_TASK_EXTRACTION_MODEL
         ),
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_transcription_model=os.getenv(
