@@ -1,1 +1,1 @@
-"""Duki backend package."""
+"""Backend application package."""

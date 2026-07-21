@@ -72,6 +72,8 @@ Default to what's already in the stack (FastAPI, Pydantic, the async DB client, 
 
 ## Python Quality Standards
 - PEP 8, explicit naming, no ambiguous abbreviations.
+- Centralize repeated product names and domain identifiers in constants or
+  configuration; do not scatter repeated string literals across runtime code.
 - Every function fully type-hinted (args + return), modern `typing`/3.10+ syntax.
 - Business logic (scheduling math, mood computation, estimate-delta calculations) written as pure functions wherever possible — deterministic, no hidden I/O — even without a formal test suite, this keeps them easy to reason about and cheap to test later if needed.
 

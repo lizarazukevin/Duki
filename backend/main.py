@@ -8,17 +8,18 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from backend.config import Settings, get_settings
+from backend.constants import API_TITLE, LOGGER_NAME
 from backend.errors import DukiError
 from backend.routers.health import router as health_router
 
-logger = logging.getLogger("duki")
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
     docs_url = "/docs" if resolved_settings.is_local else None
     app = FastAPI(
-        title="Duki API",
+        title=API_TITLE,
         version="0.1.0",
         docs_url=docs_url,
         redoc_url=None,
