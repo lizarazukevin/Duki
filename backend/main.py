@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
+import httpx
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -30,12 +33,22 @@ def _validation_details(error: RequestValidationError) -> dict[str, object]:
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     resolved_settings = settings or get_settings()
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        timeout = httpx.Timeout(10.0, connect=5.0)
+        limits = httpx.Limits(max_connections=100, max_keepalive_connections=20)
+        async with httpx.AsyncClient(timeout=timeout, limits=limits) as http_client:
+            app.state.http_client = http_client
+            yield
+
     docs_url = "/docs" if resolved_settings.is_local else None
     app = FastAPI(
         title=API_TITLE,
         version="0.1.0",
         docs_url=docs_url,
         redoc_url=None,
+        lifespan=lifespan,
     )
     app.state.settings = resolved_settings
     app.include_router(health_router)

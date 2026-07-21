@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -15,3 +16,10 @@ class GoogleAuthorizeRequest(BaseModel):
 
 class GoogleAuthorizeResponse(BaseModel):
     authorization_url: str
+
+
+class SessionResponse(BaseModel):
+    user_id: UUID
+    email: str
+    display_name: str | None
+    avatar_url: str | None

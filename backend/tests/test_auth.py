@@ -1,24 +1,36 @@
 import json
 import unittest
 from urllib.parse import parse_qs, urlparse
+from uuid import uuid4
 
+import httpx
 from pydantic import ValidationError
 
 from backend.adapters.auth.supabase import (
     GOOGLE_CALENDAR_SCOPE,
-    SupabaseGoogleIdentityAdapter,
+    SupabaseGoogleAuthorizationAdapter,
+    SupabaseSessionValidationAdapter,
 )
-from backend.errors import RedirectNotAllowedError
+from backend.errors import (
+    AuthenticationError,
+    IdentityProviderUnavailableError,
+    RedirectNotAllowedError,
+)
 from backend.schemas.auth import GoogleAuthorizeRequest
-from backend.services.identity_auth_service import IdentityAuthService
+from backend.services.identity_authorization_service import (
+    IdentityAuthorizationService,
+)
 
 PKCE_CHALLENGE = "A" * 43
 
 
 class GoogleAuthorizationTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.adapter = SupabaseGoogleIdentityAdapter("https://project.supabase.co/")
-        self.service = IdentityAuthService(self.adapter, frozenset({"localhost"}))
+        self.adapter = SupabaseGoogleAuthorizationAdapter("https://project.supabase.co/")
+        self.service = IdentityAuthorizationService(
+            self.adapter,
+            frozenset({"localhost"}),
+        )
 
     def test_authorization_url_requests_calendar_and_offline_consent(self) -> None:
         url = self.service.authorization_url(
@@ -53,3 +65,66 @@ class GoogleAuthorizationTests(unittest.TestCase):
                     "code_challenge": "too-short",
                 }
             )
+
+
+class SupabaseSessionValidationTests(unittest.IsolatedAsyncioTestCase):
+    async def test_valid_session_returns_provider_neutral_user(self) -> None:
+        user_id = uuid4()
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.headers["apikey"], "publishable-key")
+            self.assertEqual(request.headers["authorization"], "Bearer session-token")
+            return httpx.Response(
+                200,
+                json={
+                    "id": str(user_id),
+                    "email": "duck@example.com",
+                    "user_metadata": {"full_name": "Ducky"},
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            adapter = SupabaseSessionValidationAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            user = await adapter.validate_access_token("session-token")
+
+        self.assertEqual(user.id, user_id)
+        self.assertEqual(user.display_name, "Ducky")
+
+    async def test_expired_session_is_rejected(self) -> None:
+        transport = httpx.MockTransport(lambda request: httpx.Response(401))
+        async with httpx.AsyncClient(transport=transport) as client:
+            adapter = SupabaseSessionValidationAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            with self.assertRaises(AuthenticationError):
+                await adapter.validate_access_token("expired-token")
+
+    async def test_malformed_provider_response_is_translated(self) -> None:
+        transport = httpx.MockTransport(lambda request: httpx.Response(200, json=[]))
+        async with httpx.AsyncClient(transport=transport) as client:
+            adapter = SupabaseSessionValidationAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            with self.assertRaises(IdentityProviderUnavailableError):
+                await adapter.validate_access_token("session-token")
+
+    async def test_provider_timeout_is_translated(self) -> None:
+        def timeout(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectTimeout("timed out", request=request)
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(timeout)) as client:
+            adapter = SupabaseSessionValidationAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            with self.assertRaises(IdentityProviderUnavailableError):
+                await adapter.validate_access_token("session-token")

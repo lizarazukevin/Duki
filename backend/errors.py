@@ -10,8 +10,18 @@ class AuthConfigurationError(DukiError):
     status_code = 503
 
 
+class AuthenticationError(DukiError):
+    code = "invalid_session"
+    status_code = 401
+
+
 class FeatureDisabledError(DukiError):
     code = "feature_disabled"
+    status_code = 503
+
+
+class IdentityProviderUnavailableError(DukiError):
+    code = "identity_provider_unavailable"
     status_code = 503
 
 
