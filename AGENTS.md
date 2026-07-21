@@ -19,8 +19,13 @@ small, gradual commits with one reviewable concern each (for example: scaffoldin
 then auth integration, then persistence/RLS). Prefer the smallest independently
 verifiable change before moving to the next concern.
 
-## Scope Right Now: Backend Only
-Do not modify `frontend/` or generate frontend code unless explicitly asked. All work happens in `backend/` per the established layout: `routers/ → services/ → adapters/ + repositories/ → models/ + schemas/`. Routers contain no business logic; services never construct their own adapters/repos (constructor-injected only).
+## Scope Right Now: Frontend MVP
+Frontend development is explicitly authorized and is now the priority. Keep frontend
+work in `frontend/` with feature-oriented modules and shared infrastructure under
+`src/lib/`. Make backend changes only when they unblock the end-to-end frontend or
+deployment. Existing backend work continues to follow `routers/ → services/ →
+adapters/ + repositories/ → models/ + schemas/`; routers contain no business logic and
+services never construct their own adapters/repos.
 
 ## Core Architectural Rules (unchanged — non-negotiable)
 1. **Adapters** — pure I/O translation for external systems (Google Calendar, Whisper/STT, LLM providers, Postgres driver). No business logic. Always implement an abstract `Protocol`/ABC so they're swappable and mockable.
