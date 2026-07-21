@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import httpx
 
 from backend.adapters.calendar.base import CalendarAdapter
+from backend.constants import PRIMARY_CALENDAR_ID
 from backend.errors import (
     CalendarAuthorizationError,
     CalendarRateLimitError,
@@ -45,7 +46,7 @@ class GoogleCalendarAdapter(CalendarAdapter):
         credentials: GoogleCredentials,
         start_time: datetime,
         end_time: datetime,
-        calendar_id: str = "primary",
+        calendar_id: str = PRIMARY_CALENDAR_ID,
     ) -> CalendarFetchResult:
         active_credentials = credentials
         refreshed_credentials: GoogleCredentials | None = None

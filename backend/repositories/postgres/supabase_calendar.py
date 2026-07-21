@@ -1,5 +1,7 @@
+import json
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from uuid import UUID
 
 import httpx
 
@@ -42,6 +44,44 @@ class SupabaseCalendarRepository(CalendarRepository):
             raise CalendarPersistenceError("Calendar events could not be saved") from error
         if response.status_code >= 400:
             raise CalendarPersistenceError("Calendar events could not be saved")
+
+    async def mark_events_cancelled(
+        self,
+        user_id: UUID,
+        provider_calendar_id: str,
+        provider_event_ids: Sequence[str],
+    ) -> None:
+        if not provider_event_ids:
+            return
+        changed_at = datetime.now(UTC).isoformat()
+        for start in range(0, len(provider_event_ids), 100):
+            event_ids = provider_event_ids[start : start + 100]
+            in_filter = f"in.({','.join(json.dumps(event_id) for event_id in event_ids)})"
+            try:
+                response = await self._http_client.patch(
+                    self._events_url,
+                    params={
+                        "user_id": f"eq.{user_id}",
+                        "provider_calendar_id": f"eq.{provider_calendar_id}",
+                        "provider_event_id": in_filter,
+                    },
+                    headers=self._headers,
+                    json={
+                        "status": "cancelled",
+                        "synced_at": changed_at,
+                        "updated_at": changed_at,
+                    },
+                )
+            except (
+                httpx.TimeoutException,
+                httpx.NetworkError,
+                httpx.ProtocolError,
+            ) as error:
+                raise CalendarPersistenceError(
+                    "Cancelled calendar events could not be saved"
+                ) from error
+            if response.status_code >= 400:
+                raise CalendarPersistenceError("Cancelled calendar events could not be saved")
 
     @staticmethod
     def _serialize_event(event: CalendarEvent, synced_at: str) -> dict[str, object]:

@@ -20,6 +20,11 @@ class CalendarAuthorizationError(DukiError):
     status_code = 401
 
 
+class CalendarConfigurationError(DukiError):
+    code = "calendar_configuration_error"
+    status_code = 503
+
+
 class CalendarRateLimitError(DukiError):
     code = "calendar_rate_limited"
     status_code = 503
