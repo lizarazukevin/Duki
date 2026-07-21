@@ -1,9 +1,11 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
 from backend.models.auth import GoogleCredentials
+
+MAX_CALENDAR_SYNC_RANGE = timedelta(days=366)
 
 
 class CalendarEventStatus(StrEnum):
@@ -42,3 +44,23 @@ class CalendarFetchResult:
     events: tuple[CalendarEvent, ...]
     cancelled_event_ids: tuple[str, ...]
     refreshed_credentials: GoogleCredentials | None
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarSyncWindow:
+    start_time: datetime
+    end_time: datetime
+
+    def __post_init__(self) -> None:
+        if self.start_time.utcoffset() is None or self.end_time.utcoffset() is None:
+            raise ValueError("Calendar sync timestamps must include a timezone")
+        if self.end_time <= self.start_time:
+            raise ValueError("Calendar sync end time must be after its start time")
+        if self.end_time - self.start_time > MAX_CALENDAR_SYNC_RANGE:
+            raise ValueError("Calendar sync window cannot exceed 366 days")
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarSyncSummary:
+    events_upserted: int
+    events_cancelled: int

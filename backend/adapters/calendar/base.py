@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Protocol
 
+from backend.constants import PRIMARY_CALENDAR_ID
 from backend.models.auth import GoogleCredentials
 from backend.models.calendar import CalendarFetchResult
 
@@ -13,5 +14,5 @@ class CalendarAdapter(Protocol):
         credentials: GoogleCredentials,
         start_time: datetime,
         end_time: datetime,
-        calendar_id: str = "primary",
+        calendar_id: str = PRIMARY_CALENDAR_ID,
     ) -> CalendarFetchResult: ...

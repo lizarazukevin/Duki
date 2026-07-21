@@ -14,6 +14,7 @@ from backend.config import Settings, get_settings
 from backend.constants import API_TITLE, API_V1_PREFIX, LOGGER_NAME
 from backend.errors import DukiError
 from backend.routers.auth import router as auth_router
+from backend.routers.calendar_events import router as calendar_events_router
 from backend.routers.health import router as health_router
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -53,6 +54,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = resolved_settings
     app.include_router(health_router)
     app.include_router(auth_router, prefix=API_V1_PREFIX)
+    app.include_router(calendar_events_router, prefix=API_V1_PREFIX)
 
     @app.exception_handler(DukiError)
     async def handle_domain_error(request: Request, error: DukiError) -> JSONResponse:
