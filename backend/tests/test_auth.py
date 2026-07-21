@@ -11,6 +11,7 @@ from backend.adapters.auth.supabase import (
     GOOGLE_CALENDAR_SCOPE,
     SupabaseAuthorizationCodeExchangeAdapter,
     SupabaseGoogleAuthorizationAdapter,
+    SupabaseSessionRefreshAdapter,
     SupabaseSessionValidationAdapter,
 )
 from backend.errors import (
@@ -18,6 +19,7 @@ from backend.errors import (
     AuthorizationExchangeError,
     IdentityProviderUnavailableError,
     RedirectNotAllowedError,
+    SessionRefreshError,
 )
 from backend.models.auth import AuthenticatedUser, ExchangedSession, GoogleCredentials
 from backend.schemas.auth import GoogleAuthorizeRequest, SessionExchangeRequest
@@ -223,6 +225,56 @@ class SupabaseAuthorizationCodeExchangeTests(unittest.IsolatedAsyncioTestCase):
                     "auth_code_verifier": "too-short",
                 }
             )
+
+
+class SupabaseSessionRefreshTests(unittest.IsolatedAsyncioTestCase):
+    async def test_refresh_token_is_rotated_into_a_new_session(self) -> None:
+        user_id = uuid4()
+
+        def respond(request: httpx.Request) -> httpx.Response:
+            self.assertEqual(request.url.params["grant_type"], "refresh_token")
+            self.assertEqual(request.headers["apikey"], "publishable-key")
+            self.assertEqual(
+                json.loads(request.content),
+                {"refresh_token": "current-refresh-token"},
+            )
+            return httpx.Response(
+                200,
+                json={
+                    "access_token": "replacement-access-token",
+                    "refresh_token": "replacement-refresh-token",
+                    "expires_in": 3600,
+                    "user": {
+                        "id": str(user_id),
+                        "email": "duck@example.com",
+                        "user_metadata": {},
+                    },
+                },
+            )
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(respond)) as client:
+            adapter = SupabaseSessionRefreshAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            session = await adapter.refresh_session("current-refresh-token")
+
+        self.assertEqual(session.user.id, user_id)
+        self.assertEqual(session.access_token, "replacement-access-token")
+        self.assertEqual(session.refresh_token, "replacement-refresh-token")
+        self.assertGreater(session.expires_at, datetime.now(UTC))
+
+    async def test_used_refresh_token_is_rejected(self) -> None:
+        transport = httpx.MockTransport(lambda request: httpx.Response(400))
+        async with httpx.AsyncClient(transport=transport) as client:
+            adapter = SupabaseSessionRefreshAdapter(
+                client,
+                "https://project.supabase.co",
+                "publishable-key",
+            )
+            with self.assertRaises(SessionRefreshError):
+                await adapter.refresh_session("already-used-refresh-token")
 
 
 class _StaticExchangeAdapter:

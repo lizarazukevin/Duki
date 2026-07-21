@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from backend.models.auth import AuthenticatedUser, ExchangedSession
+from backend.models.auth import AuthenticatedUser, ExchangedSession, SessionTokens
 
 
 class IdentityAuthorizationAdapter(Protocol):
@@ -27,3 +27,9 @@ class AuthorizationCodeExchangeAdapter(Protocol):
         auth_code: str,
         auth_code_verifier: str,
     ) -> ExchangedSession: ...
+
+
+class SessionRefreshAdapter(Protocol):
+    """Port for rotating a refresh token into a new identity session."""
+
+    async def refresh_session(self, refresh_token: str) -> SessionTokens: ...

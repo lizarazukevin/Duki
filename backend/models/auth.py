@@ -29,3 +29,13 @@ class ExchangedSession:
     expires_at: datetime
     provider_access_token: str
     provider_refresh_token: str
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTokens:
+    """A renewable provider-neutral identity session."""
+
+    user: AuthenticatedUser
+    access_token: str
+    refresh_token: str
+    expires_at: datetime
