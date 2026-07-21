@@ -176,6 +176,11 @@ class MoodPersistenceError(DukiError):
     status_code = 503
 
 
+class MoodConfigurationError(DukiError):
+    code = "mood_configuration_error"
+    status_code = 503
+
+
 class RedirectNotAllowedError(DukiError):
     code = "redirect_not_allowed"
     status_code = 422
