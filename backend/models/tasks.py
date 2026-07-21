@@ -140,6 +140,27 @@ class Goal:
     updated_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class GoalDraft:
+    title: str
+    description: str | None
+    target_date: date | None
+
+    def __post_init__(self) -> None:
+        _validate_goal_fields(self.title, self.description)
+
+
+@dataclass(frozen=True, slots=True)
+class GoalUpdate:
+    title: str
+    description: str | None
+    status: GoalStatus
+    target_date: date | None
+
+    def __post_init__(self) -> None:
+        _validate_goal_fields(self.title, self.description)
+
+
 def _validate_editable_fields(
     *,
     title: str,
@@ -164,3 +185,10 @@ def _validate_editable_fields(
         raise ValueError("Task due time must include a timezone")
     if position < 0:
         raise ValueError("Task position cannot be negative")
+
+
+def _validate_goal_fields(title: str, description: str | None) -> None:
+    if not title.strip() or len(title) > 500:
+        raise ValueError("Goal title must contain between 1 and 500 characters")
+    if description is not None and len(description) > 10000:
+        raise ValueError("Goal description cannot exceed 10000 characters")

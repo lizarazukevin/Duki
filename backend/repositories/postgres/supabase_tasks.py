@@ -307,6 +307,40 @@ class SupabaseGoalRepository(GoalRepository):
             {"id": f"eq.{goal_id}", "user_id": f"eq.{user_id}"},
         )
 
+    async def list_goals(self, user_id: UUID, include_archived: bool) -> tuple[Goal, ...]:
+        parameters = {
+            "select": "*",
+            "user_id": f"eq.{user_id}",
+            "order": "created_at.asc,id.asc",
+        }
+        if not include_archived:
+            parameters["status"] = "neq.archived"
+
+        page_size = 500
+        offset = 0
+        goals: list[Goal] = []
+        while True:
+            try:
+                response = await self._http_client.get(
+                    self._goals_url,
+                    params={**parameters, "limit": str(page_size), "offset": str(offset)},
+                    headers={"apikey": self._headers["apikey"]},
+                )
+            except _NETWORK_ERRORS as error:
+                raise GoalPersistenceError("Goals could not be loaded") from error
+            if response.status_code >= 400:
+                raise GoalPersistenceError("Goals could not be loaded")
+            try:
+                payload: object = response.json()
+                if not isinstance(payload, list):
+                    raise TypeError("Invalid goal collection")
+                goals.extend(_parse_goal(row) for row in payload)
+            except (KeyError, TypeError, ValueError) as error:
+                raise GoalPersistenceError("Stored goals are invalid") from error
+            if len(payload) < page_size:
+                return tuple(goals)
+            offset += page_size
+
     async def _write(
         self,
         method: str,
