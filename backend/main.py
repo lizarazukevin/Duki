@@ -8,11 +8,24 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from backend.config import Settings, get_settings
-from backend.constants import API_TITLE, LOGGER_NAME
+from backend.constants import API_TITLE, API_V1_PREFIX, LOGGER_NAME
 from backend.errors import DukiError
+from backend.routers.auth import router as auth_router
 from backend.routers.health import router as health_router
 
 logger = logging.getLogger(LOGGER_NAME)
+
+
+def _validation_details(error: RequestValidationError) -> dict[str, object]:
+    fields = [
+        {
+            "field": ".".join(str(part) for part in issue.get("loc", ())),
+            "message": str(issue.get("msg", "Invalid value")),
+            "type": str(issue.get("type", "validation_error")),
+        }
+        for issue in error.errors()
+    ]
+    return {"fields": fields}
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -26,13 +39,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = resolved_settings
     app.include_router(health_router)
+    app.include_router(auth_router, prefix=API_V1_PREFIX)
 
     @app.exception_handler(DukiError)
     async def handle_domain_error(request: Request, error: DukiError) -> JSONResponse:
         logger.warning("domain_error code=%s path=%s", error.code, request.url.path)
         return JSONResponse(
-            status_code=400,
-            content={"error": str(error), "code": error.code},
+            status_code=error.status_code,
+            content={"error": str(error), "code": error.code, "details": {}},
         )
 
     @app.exception_handler(RequestValidationError)
@@ -42,7 +56,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         logger.info("validation_error path=%s", request.url.path)
         return JSONResponse(
             status_code=422,
-            content={"error": "Request validation failed", "code": "validation_error"},
+            content={
+                "error": "Request validation failed",
+                "code": "validation_error",
+                "details": _validation_details(error),
+            },
         )
 
     @app.exception_handler(Exception)
@@ -54,7 +72,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         return JSONResponse(
             status_code=500,
-            content={"error": "An unexpected error occurred", "code": "internal_error"},
+            content={
+                "error": "An unexpected error occurred",
+                "code": "internal_error",
+                "details": {},
+            },
         )
 
     return app
