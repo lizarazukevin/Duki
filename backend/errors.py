@@ -58,6 +58,11 @@ class DuckSessionPersistenceError(DukiError):
     status_code = 503
 
 
+class DuckSessionConfigurationError(DukiError):
+    code = "duck_session_configuration_error"
+    status_code = 503
+
+
 class AuthConfigurationError(DukiError):
     code = "auth_configuration_error"
     status_code = 503

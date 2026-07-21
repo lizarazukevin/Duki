@@ -55,7 +55,8 @@ class OpenAIVoiceAdapter(VoiceAdapter):
         audio_chunks: AsyncIterable[bytes],
         media_type: str,
     ) -> RawTranscript:
-        extension = _AUDIO_FILE_EXTENSIONS.get(media_type.lower())
+        normalized_media_type = media_type.partition(";")[0].strip().lower()
+        extension = _AUDIO_FILE_EXTENSIONS.get(normalized_media_type)
         if extension is None:
             raise UnsupportedAudioTypeError("The audio format is not supported")
 
@@ -69,7 +70,7 @@ class OpenAIVoiceAdapter(VoiceAdapter):
                 },
                 content=self._multipart_body(
                     audio_chunks=audio_chunks,
-                    media_type=media_type.lower(),
+                    media_type=normalized_media_type,
                     extension=extension,
                     boundary=boundary,
                 ),
