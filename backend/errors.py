@@ -15,6 +15,11 @@ class AuthenticationError(DukiError):
     status_code = 401
 
 
+class CredentialEncryptionError(DukiError):
+    code = "credential_encryption_failed"
+    status_code = 500
+
+
 class FeatureDisabledError(DukiError):
     code = "feature_disabled"
     status_code = 503
@@ -22,6 +27,11 @@ class FeatureDisabledError(DukiError):
 
 class IdentityProviderUnavailableError(DukiError):
     code = "identity_provider_unavailable"
+    status_code = 503
+
+
+class PersistenceError(DukiError):
+    code = "persistence_unavailable"
     status_code = 503
 
 
