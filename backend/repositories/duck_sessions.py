@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
-from backend.models.duck_sessions import DuckSession
+from backend.models.duck_sessions import DuckSession, TaskResolutionDecision
 from backend.models.tasks import Task
 
 
@@ -20,3 +21,11 @@ class DuckSessionRepository(Protocol):
     ) -> None: ...
 
     async def get_session(self, user_id: UUID, session_id: UUID) -> DuckSession: ...
+
+    async def confirm_session(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        decisions: Sequence[TaskResolutionDecision],
+        confirmed_at: datetime,
+    ) -> None: ...

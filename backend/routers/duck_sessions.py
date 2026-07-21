@@ -7,13 +7,20 @@ from starlette.requests import ClientDisconnect
 
 from backend.composition.auth import require_current_user
 from backend.composition.duck_sessions import (
+    provide_duck_session_confirmation_service,
     provide_duck_session_query_service,
     provide_duck_session_service,
 )
 from backend.constants import API_V1_PREFIX
 from backend.errors import TranscriptionError
 from backend.models.auth import AuthenticatedUser
-from backend.schemas.duck_sessions import DuckSessionResponse
+from backend.schemas.duck_sessions import (
+    DuckSessionConfirmationRequest,
+    DuckSessionResponse,
+)
+from backend.services.duck_session_confirmation_service import (
+    DuckSessionConfirmationService,
+)
 from backend.services.duck_session_query_service import DuckSessionQueryService
 from backend.services.duck_session_service import DuckSessionService
 
@@ -60,6 +67,24 @@ async def get_duck_session(
     ],
 ) -> DuckSessionResponse:
     session = await service.get_session(user.id, session_id)
+    return DuckSessionResponse.from_domain(session)
+
+
+@router.post("/{session_id}/confirm", response_model=DuckSessionResponse)
+async def confirm_duck_session(
+    session_id: UUID,
+    body: DuckSessionConfirmationRequest,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[
+        DuckSessionConfirmationService,
+        Depends(provide_duck_session_confirmation_service),
+    ],
+) -> DuckSessionResponse:
+    session = await service.confirm(
+        user.id,
+        session_id,
+        tuple(decision.to_domain() for decision in body.decisions),
+    )
     return DuckSessionResponse.from_domain(session)
 
 

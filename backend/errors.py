@@ -69,6 +69,11 @@ class DuckSessionPersistenceError(DukiError):
     status_code = 503
 
 
+class DuckSessionConfirmationConflictError(DukiError):
+    code = "duck_session_confirmation_conflict"
+    status_code = 409
+
+
 class DuckSessionConfigurationError(DukiError):
     code = "duck_session_configuration_error"
     status_code = 503

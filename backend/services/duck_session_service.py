@@ -67,6 +67,8 @@ class DuckSessionService:
             transcript=None,
             root_task_id=None,
             resolution_suggestions=(),
+            confirmed_resolutions=(),
+            confirmed_at=None,
             failure_code=None,
             finished_at=None,
             created_at=started_at,

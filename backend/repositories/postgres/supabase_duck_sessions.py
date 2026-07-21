@@ -4,11 +4,16 @@ from uuid import UUID
 
 import httpx
 
-from backend.errors import DuckSessionNotFoundError, DuckSessionPersistenceError
+from backend.errors import (
+    DuckSessionConfirmationConflictError,
+    DuckSessionNotFoundError,
+    DuckSessionPersistenceError,
+)
 from backend.models.duck_sessions import (
     DuckSession,
     DuckSessionStatus,
     SuggestedTaskAction,
+    TaskResolutionDecision,
     TaskResolutionSuggestion,
 )
 from backend.models.tasks import Task
@@ -30,6 +35,7 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
         self._http_client = http_client
         self._sessions_url = f"{rest_url}/duck_sessions"
         self._completion_url = f"{rest_url}/rpc/complete_duck_session"
+        self._confirmation_url = f"{rest_url}/rpc/confirm_duck_session"
         self._headers = {"apikey": secret_key, "Prefer": "return=minimal"}
 
     async def create_session(self, session: DuckSession) -> None:
@@ -97,6 +103,35 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
         except (KeyError, TypeError, ValueError) as error:
             raise DuckSessionPersistenceError("Stored duck session is invalid") from error
 
+    async def confirm_session(
+        self,
+        user_id: UUID,
+        session_id: UUID,
+        decisions: Sequence[TaskResolutionDecision],
+        confirmed_at: datetime,
+    ) -> None:
+        try:
+            response = await self._http_client.post(
+                self._confirmation_url,
+                headers=self._headers,
+                json={
+                    "p_user_id": str(user_id),
+                    "p_session_id": str(session_id),
+                    "p_confirmed_at": confirmed_at.isoformat(),
+                    "p_decisions": [self._serialize_decision(item) for item in decisions],
+                },
+            )
+        except _NETWORK_ERRORS as error:
+            raise DuckSessionPersistenceError("Duck confirmation could not be saved") from error
+        if response.status_code == 404:
+            raise DuckSessionNotFoundError("Duck session was not found")
+        if response.status_code == 409:
+            raise DuckSessionConfirmationConflictError(
+                "Duck session cannot be confirmed from its current state"
+            )
+        if response.status_code >= 400:
+            raise DuckSessionPersistenceError("Duck confirmation could not be saved")
+
     async def _write(
         self,
         method: str,
@@ -129,6 +164,11 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
                 SupabaseDuckSessionRepository._serialize_resolution(suggestion)
                 for suggestion in session.resolution_suggestions
             ],
+            "confirmed_resolutions": [
+                SupabaseDuckSessionRepository._serialize_decision(decision)
+                for decision in session.confirmed_resolutions
+            ],
+            "confirmed_at": session.confirmed_at.isoformat() if session.confirmed_at else None,
             "failure_code": session.failure_code,
             "finished_at": session.finished_at.isoformat() if session.finished_at else None,
             "created_at": session.created_at.isoformat(),
@@ -163,6 +203,15 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
         }
 
     @staticmethod
+    def _serialize_decision(decision: TaskResolutionDecision) -> dict[str, object]:
+        return {
+            "task_id": str(decision.task_id),
+            "action": decision.action.value,
+            "actual_minutes": decision.actual_minutes,
+            "actual_easiness_score": decision.actual_easiness_score,
+        }
+
+    @staticmethod
     def _parse_session(row: object) -> DuckSession:
         if not isinstance(row, dict):
             raise TypeError("Invalid duck session row")
@@ -173,6 +222,8 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
             transcript=_optional_string(row, "transcript"),
             root_task_id=_optional_uuid(row, "root_task_id"),
             resolution_suggestions=_parse_resolutions(row.get("resolution_suggestions")),
+            confirmed_resolutions=_parse_decisions(row.get("confirmed_resolutions")),
+            confirmed_at=_optional_datetime(row, "confirmed_at"),
             failure_code=_optional_string(row, "failure_code"),
             finished_at=_optional_datetime(row, "finished_at"),
             created_at=datetime.fromisoformat(_required_string(row, "created_at")),
@@ -227,3 +278,21 @@ def _optional_int(row: dict[str, object], field: str) -> int | None:
     if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
         raise TypeError("Invalid optional duck session number")
     return value
+
+
+def _parse_decisions(value: object) -> tuple[TaskResolutionDecision, ...]:
+    if not isinstance(value, list):
+        raise TypeError("Invalid confirmed duck resolutions")
+    decisions: list[TaskResolutionDecision] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise TypeError("Invalid confirmed duck resolution")
+        decisions.append(
+            TaskResolutionDecision(
+                task_id=UUID(_required_string(item, "task_id")),
+                action=SuggestedTaskAction(_required_string(item, "action")),
+                actual_minutes=_optional_int(item, "actual_minutes"),
+                actual_easiness_score=_optional_int(item, "actual_easiness_score"),
+            )
+        )
+    return tuple(decisions)

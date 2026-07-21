@@ -41,6 +41,26 @@ class TaskResolutionSuggestion:
 
 
 @dataclass(frozen=True, slots=True)
+class TaskResolutionDecision:
+    task_id: UUID
+    action: SuggestedTaskAction
+    actual_minutes: int | None
+    actual_easiness_score: int | None
+
+    def __post_init__(self) -> None:
+        feedback = TaskResolutionSuggestion(
+            self.task_id,
+            self.action,
+            self.actual_minutes,
+            self.actual_easiness_score,
+        )
+        if feedback.suggested_action is SuggestedTaskAction.COMPLETE and (
+            feedback.actual_minutes is None or feedback.actual_easiness_score is None
+        ):
+            raise ValueError("Confirmed completion requires actual feedback")
+
+
+@dataclass(frozen=True, slots=True)
 class ExtractedCompletionFeedback:
     actual_minutes: int | None
     actual_easiness_score: int | None
@@ -136,6 +156,8 @@ class DuckSession:
     transcript: str | None
     root_task_id: UUID | None
     resolution_suggestions: tuple[TaskResolutionSuggestion, ...]
+    confirmed_resolutions: tuple[TaskResolutionDecision, ...]
+    confirmed_at: datetime | None
     failure_code: str | None
     finished_at: datetime | None
     created_at: datetime
@@ -146,10 +168,19 @@ class DuckSession:
             _validate_transcript(self.transcript)
         if self.failure_code is not None and not 1 <= len(self.failure_code) <= 100:
             raise ValueError("Duck session failure code is invalid")
+        if bool(self.confirmed_resolutions) != (self.confirmed_at is not None):
+            raise ValueError("Duck session confirmation state is inconsistent")
+        confirmed_task_ids = [decision.task_id for decision in self.confirmed_resolutions]
+        if len(confirmed_task_ids) != len(set(confirmed_task_ids)):
+            raise ValueError("Each task can have only one confirmed resolution")
+        suggested_task_ids = {suggestion.task_id for suggestion in self.resolution_suggestions}
+        if self.confirmed_resolutions and set(confirmed_task_ids) != suggested_task_ids:
+            raise ValueError("Confirmed resolutions must cover every suggestion")
         if self.status is DuckSessionStatus.PROCESSING:
             if (
                 self.root_task_id
                 or self.resolution_suggestions
+                or self.confirmed_resolutions
                 or self.failure_code
                 or self.finished_at
             ):
@@ -160,6 +191,7 @@ class DuckSession:
         elif (
             self.root_task_id
             or self.resolution_suggestions
+            or self.confirmed_resolutions
             or self.failure_code is None
             or self.finished_at is None
         ):

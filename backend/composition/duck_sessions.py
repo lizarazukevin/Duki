@@ -15,6 +15,9 @@ from backend.repositories.postgres.supabase_duck_sessions import (
     SupabaseDuckSessionRepository,
 )
 from backend.repositories.postgres.supabase_tasks import SupabaseTaskRepository
+from backend.services.duck_session_confirmation_service import (
+    DuckSessionConfirmationService,
+)
 from backend.services.duck_session_query_service import DuckSessionQueryService
 from backend.services.duck_session_service import DuckSessionService
 from backend.services.task_deduplication_service import TaskDeduplicationService
@@ -110,3 +113,13 @@ def provide_duck_session_query_service(request: Request) -> DuckSessionQueryServ
     """Compose duck-session reads without requiring processing-provider configuration."""
     _, supabase_url, secret_key, http_client = _session_dependencies(request)
     return DuckSessionQueryService(_session_repository(supabase_url, secret_key, http_client))
+
+
+def provide_duck_session_confirmation_service(
+    request: Request,
+) -> DuckSessionConfirmationService:
+    """Compose atomic user confirmation without loading voice providers."""
+    _, supabase_url, secret_key, http_client = _session_dependencies(request)
+    return DuckSessionConfirmationService(
+        _session_repository(supabase_url, secret_key, http_client)
+    )
