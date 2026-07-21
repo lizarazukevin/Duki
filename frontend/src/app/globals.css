@@ -529,43 +529,6 @@ a {
   font-size: 0.85rem;
 }
 
-.home-nav {
-  position: fixed;
-  z-index: 4;
-  bottom: 0;
-  left: 50%;
-  display: grid;
-  width: min(100%, 560px);
-  grid-template-columns: repeat(5, 1fr);
-  border-top: 1px solid color-mix(in srgb, var(--app-ink) 12%, transparent);
-  background: var(--app-surface);
-  box-shadow: 0 -12px 30px var(--app-shadow);
-  color: var(--app-muted);
-  transform: translateX(-50%);
-}
-
-.home-nav a,
-.home-nav button {
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 18px 3px;
-  text-align: center;
-  text-decoration: none;
-  font-size: 0.6rem;
-  font-weight: 760;
-  text-transform: uppercase;
-}
-
-.home-nav a {
-  background: var(--app-accent);
-  color: #17324d;
-}
-
-.home-nav button:disabled {
-  opacity: 1;
-}
-
 @keyframes duck-float {
   0%,
   100% {

@@ -9,9 +9,11 @@ from backend.config import Settings
 from backend.errors import CalendarConfigurationError, FeatureDisabledError
 from backend.repositories.postgres.supabase_auth import SupabaseAuthRepository
 from backend.repositories.postgres.supabase_calendar import SupabaseCalendarRepository
+from backend.repositories.postgres.supabase_tasks import SupabaseTaskRepository
 from backend.services.calendar_availability_service import CalendarAvailabilityService
 from backend.services.calendar_query_service import CalendarQueryService
 from backend.services.calendar_sync_service import CalendarSyncService
+from backend.services.task_calendar_service import TaskCalendarService
 
 
 def provide_calendar_sync_service(request: Request) -> CalendarSyncService:
@@ -79,4 +81,43 @@ def provide_calendar_availability_service(request: Request) -> CalendarAvailabil
             supabase_url=settings.supabase_url,
             secret_key=settings.supabase_secret_key,
         )
+    )
+
+
+def provide_task_calendar_service(request: Request) -> TaskCalendarService:
+    """Compose task scheduling writes to Google and the local calendar cache."""
+    settings = cast(Settings, request.app.state.settings)
+    if not settings.calendar_sync_enabled or not settings.tasks_enabled:
+        raise FeatureDisabledError("Task calendar scheduling is not enabled")
+    if not settings.supabase_url or not settings.supabase_secret_key:
+        raise CalendarConfigurationError("Calendar persistence is not configured")
+    if not settings.credential_encryption_keys:
+        raise CalendarConfigurationError("Credential encryption is not configured")
+    if not settings.google_oauth_client_id or not settings.google_oauth_client_secret:
+        raise CalendarConfigurationError("Google OAuth refresh is not configured")
+
+    http_client = cast(httpx.AsyncClient, request.app.state.http_client)
+    credential_cipher = FernetCredentialCipher(settings.credential_encryption_keys)
+    return TaskCalendarService(
+        calendar_adapter=GoogleCalendarAdapter(
+            http_client=http_client,
+            client_id=settings.google_oauth_client_id,
+            client_secret=settings.google_oauth_client_secret,
+        ),
+        auth_repository=SupabaseAuthRepository(
+            http_client=http_client,
+            supabase_url=settings.supabase_url,
+            secret_key=settings.supabase_secret_key,
+            credential_cipher=credential_cipher,
+        ),
+        calendar_repository=SupabaseCalendarRepository(
+            http_client=http_client,
+            supabase_url=settings.supabase_url,
+            secret_key=settings.supabase_secret_key,
+        ),
+        task_repository=SupabaseTaskRepository(
+            http_client=http_client,
+            supabase_url=settings.supabase_url,
+            secret_key=settings.supabase_secret_key,
+        ),
     )

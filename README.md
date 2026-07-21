@@ -1,6 +1,17 @@
 # Duky
 Maximize productivity with mood-based task management and a bright yellow rubber duck.
 
+## Authenticated app
+
+The browser app now provides dedicated Tasks, Calendar, Insights, and Profile views
+behind the existing Google sign-in. Calendar reads the connected primary Google
+calendar and can save a suggested task there without leaving Duky. Later task edits
+update that same calendar event, and the event appears immediately in Duky's timeline.
+Mood check-ins shape deadline-aware daily suggestions, and voice uploads support both
+task capture and microphone-first ad hoc debriefs. Home also includes a focused Duky
+timer for staying with one task. Insights reports only metrics supported by current
+data, and Profile keeps unpersisted preferences clearly marked as unavailable.
+
 ## Backend feature flags
 
 Task endpoints are private and disabled by default. Set `TASKS_ENABLED=true` in the

@@ -1,10 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { SessionIdentity } from "@/features/auth/session-provider";
 import { SupabaseSessionProvider } from "@/features/auth/supabase-session-provider";
+import { AudioDebrief } from "@/features/duck-sessions/audio-debrief";
+import { FocusMode } from "@/features/focus/focus-mode";
 import { InteractiveDuck } from "@/features/home/interactive-duck";
+import { MoodPoll } from "@/features/mood/mood-poll";
+import { AppNavigation } from "@/features/navigation/app-navigation";
 import { createApiClient } from "@/lib/api/client";
 
 interface TaskNode {
@@ -24,10 +28,26 @@ function flattenTasks(nodes: TaskNode[]): TaskNode["task"][] {
 export function AuthenticatedHome() {
   const router = useRouter();
   const sessionProvider = useMemo(() => new SupabaseSessionProvider(), []);
+  const apiClient = useMemo(
+    () => createApiClient(sessionProvider),
+    [sessionProvider],
+  );
   const [identity, setIdentity] = useState<SessionIdentity | null>();
   const [tasks, setTasks] = useState<TaskNode["task"][]>([]);
 
+  const loadTasks = useCallback(async () => {
+    try {
+      const response = await apiClient.request<{ items: TaskNode[] }>(
+        "/api/v1/tasks",
+      );
+      setTasks(flattenTasks(response.items));
+    } catch {
+      setTasks([]);
+    }
+  }, [apiClient]);
+
   useEffect(() => {
+    void loadTasks();
     sessionProvider
       .getIdentity()
       .then((currentIdentity) => {
@@ -36,13 +56,9 @@ export function AuthenticatedHome() {
           return;
         }
         setIdentity(currentIdentity);
-        createApiClient(sessionProvider)
-          .request<{ items: TaskNode[] }>("/api/v1/tasks")
-          .then((response) => setTasks(flattenTasks(response.items)))
-          .catch(() => setTasks([]));
       })
       .catch(() => router.replace("/"));
-  }, [router, sessionProvider]);
+  }, [loadTasks, router, sessionProvider]);
 
   if (!identity) {
     return <main className="home-loading">Waking up Duky…</main>;
@@ -108,6 +124,18 @@ export function AuthenticatedHome() {
         </div>
       </section>
 
+      <FocusMode taskTitle={immediateTasks[0]?.title} />
+
+      <MoodPoll />
+
+      <AudioDebrief
+        mode="debrief"
+        onComplete={loadTasks}
+        taskTitles={Object.fromEntries(
+          tasks.map((task) => [task.id, task.title]),
+        )}
+      />
+
       <section className="immediate-work" aria-labelledby="immediate-heading">
         <div className="section-heading">
           <p>Up next</p>
@@ -137,23 +165,7 @@ export function AuthenticatedHome() {
         )}
       </section>
 
-      <nav className="home-nav" aria-label="Primary navigation">
-        <button disabled type="button">
-          Tasks
-        </button>
-        <button disabled type="button">
-          Calendar
-        </button>
-        <a aria-current="page" href="/home">
-          Duky
-        </a>
-        <button disabled type="button">
-          Insights
-        </button>
-        <button disabled type="button">
-          Profile
-        </button>
-      </nav>
+      <AppNavigation active="home" period={period} />
     </main>
   );
 }

@@ -4,12 +4,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from backend.composition.auth import require_current_user
+from backend.composition.calendar import provide_task_calendar_service
 from backend.composition.tasks import (
     provide_task_completion_service,
     provide_task_goal_service,
     provide_task_service,
 )
 from backend.models.auth import AuthenticatedUser
+from backend.schemas.calendar import TaskCalendarEventRequest, TaskCalendarEventResponse
 from backend.schemas.task_events import TaskCompletionRequest, TaskCompletionResponse
 from backend.schemas.tasks import (
     TaskCreateRequest,
@@ -18,11 +20,31 @@ from backend.schemas.tasks import (
     TaskTreeResponse,
     TaskUpdateRequest,
 )
+from backend.services.task_calendar_service import TaskCalendarService
 from backend.services.task_completion_service import TaskCompletionService
 from backend.services.task_goal_service import TaskGoalService
 from backend.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+
+@router.put("/{task_id}/calendar-event", response_model=TaskCalendarEventResponse)
+async def save_task_calendar_event(
+    task_id: UUID,
+    body: TaskCalendarEventRequest,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[
+        TaskCalendarService,
+        Depends(provide_task_calendar_service),
+    ],
+) -> TaskCalendarEventResponse:
+    result = await service.save_task_event(
+        user_id=user.id,
+        task_id=task_id,
+        start_time=body.start_time,
+        end_time=body.end_time,
+    )
+    return TaskCalendarEventResponse.from_domain(task_id, result.event)
 
 
 @router.post("/{task_id}/complete", response_model=TaskCompletionResponse)

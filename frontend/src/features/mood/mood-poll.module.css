@@ -1,0 +1,83 @@
+.poll {
+  display: grid;
+  gap: 16px;
+  border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  margin-top: 38px;
+  padding-top: 16px;
+}
+
+.poll p,
+.poll h2 {
+  margin: 0;
+}
+
+.poll > div:first-child p {
+  color: var(--app-muted);
+  font-size: 0.62rem;
+  font-weight: 740;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.poll h2 {
+  margin-top: 3px;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.scaleLabels,
+.scores {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.scaleLabels {
+  margin-bottom: -12px;
+  color: var(--app-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.scaleLabels span:last-child {
+  grid-column: 5;
+  text-align: right;
+}
+
+.scores {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.scores legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.scores button {
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 50%;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 720;
+}
+
+.scores button[aria-pressed="true"] {
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: #17324d;
+}
+
+.error {
+  color: #9a3026;
+  font-size: 0.75rem;
+}

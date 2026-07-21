@@ -1,0 +1,329 @@
+.page {
+  --bg: #cfe8f6;
+  --surface: #f7fbfd;
+  --ink: #17324d;
+  --muted: #607b91;
+  --accent: #f6c945;
+  min-height: 100dvh;
+  color: var(--ink);
+  background: var(--bg);
+  padding: clamp(24px, 5vw, 56px) max(20px, calc((100vw - 1040px) / 2));
+}
+.page[data-period="night"] {
+  --bg: #102a43;
+  --surface: #193b5a;
+  --ink: #eef7fb;
+  --muted: #a9c2d3;
+}
+.header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  padding-top: 18px;
+  border-top: 1px solid currentColor;
+}
+.header p,
+.listHeading span {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.header h1 {
+  margin: 0;
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 520;
+  letter-spacing: -0.065em;
+  line-height: 0.9;
+}
+.addButton {
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  background: transparent;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.filters {
+  display: flex;
+  gap: 8px;
+  margin: 42px 0 20px;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.filters button {
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  padding: 8px 14px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.filters button[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--bg);
+}
+.search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.search input {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  background: transparent;
+  color: var(--ink);
+  padding: 10px 2px;
+  font: inherit;
+  text-transform: none;
+}
+.composer {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--ink) 10%, transparent);
+  padding: 16px;
+}
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.formRow label {
+  display: grid;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.formRow input,
+.formRow select,
+.completion input,
+.completion select {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  padding: 10px;
+}
+.composer form > input {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
+  color: var(--ink);
+  background: transparent;
+  padding: 10px 2px 14px;
+  font-size: 1.2rem;
+  outline: none;
+}
+.goalPicker {
+  border: 0;
+  margin: 14px 0 0;
+  padding: 0;
+}
+.goalPicker legend {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.goalPicker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.goalPicker label,
+.goalPicker .newGoal {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+}
+.goalPicker .newGoal {
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  border-radius: 8px;
+}
+.newGoal input {
+  min-width: 0;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 24%, transparent);
+  background: transparent;
+  color: var(--ink);
+}
+.newGoal button {
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 700;
+}
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+.formActions button {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+.formActions button:last-child {
+  background: var(--accent);
+  color: #17324d;
+  font-weight: 700;
+}
+.list {
+  margin-top: 36px;
+  padding-bottom: 100px;
+}
+.listHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 28%, transparent);
+  padding-bottom: 12px;
+}
+.listHeading h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 560;
+  text-transform: capitalize;
+}
+.list ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.task {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-left: calc(var(--depth) * 18px);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 16%, transparent);
+  padding: 18px 4px;
+}
+.check {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.taskCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+.taskCopy strong {
+  overflow: hidden;
+  font-size: 1.05rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.taskCopy small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.taskActions {
+  display: flex;
+  gap: 5px;
+}
+.taskActions button {
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 45%, transparent);
+  background: transparent;
+  padding: 5px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.overlay {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: end center;
+  background: rgb(8 30 48 / 45%);
+  padding: 16px;
+}
+.completion {
+  width: min(100%, 520px);
+  border-radius: 18px 18px 8px 8px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 25%);
+  padding: 24px;
+}
+.completion p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+.completion h2 {
+  margin: 4px 0 20px;
+  font-size: 1.55rem;
+}
+.baseline,
+.feedbackFields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.baseline {
+  margin-bottom: 18px;
+}
+.baseline span,
+.feedbackFields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.baseline strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+.feedbackFields input,
+.feedbackFields select {
+  width: 100%;
+  font: inherit;
+}
+@media (max-width: 560px) {
+  .page {
+    padding-inline: 16px;
+  }
+  .formRow {
+    grid-template-columns: 1fr 1fr;
+  }
+  .task {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+  .taskActions {
+    grid-column: 2;
+  }
+}

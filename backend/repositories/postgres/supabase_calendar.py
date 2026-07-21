@@ -14,6 +14,7 @@ from backend.models.calendar import (
     CalendarEventTransparency,
     CalendarSyncWindow,
     StoredCalendarEvent,
+    TaskCalendarEventLink,
 )
 from backend.repositories.calendar import CalendarRepository
 
@@ -29,6 +30,7 @@ class SupabaseCalendarRepository(CalendarRepository):
     ) -> None:
         self._http_client = http_client
         self._events_url = f"{supabase_url.rstrip('/')}/rest/v1/calendar_events"
+        self._task_event_links_url = f"{supabase_url.rstrip('/')}/rest/v1/task_calendar_events"
         self._headers = {
             "apikey": secret_key,
             "Prefer": "resolution=merge-duplicates,return=minimal",
@@ -144,6 +146,60 @@ class SupabaseCalendarRepository(CalendarRepository):
             if response.status_code >= 400:
                 raise CalendarPersistenceError("Cancelled calendar events could not be saved")
 
+    async def get_task_event_link(
+        self,
+        user_id: UUID,
+        task_id: UUID,
+    ) -> TaskCalendarEventLink | None:
+        try:
+            response = await self._http_client.get(
+                self._task_event_links_url,
+                params={
+                    "select": (
+                        "user_id,task_id,provider_event_id,provider_calendar_id,start_time,end_time"
+                    ),
+                    "user_id": f"eq.{user_id}",
+                    "task_id": f"eq.{task_id}",
+                    "limit": "1",
+                },
+                headers={"apikey": self._headers["apikey"]},
+            )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as error:
+            raise CalendarPersistenceError("Task calendar link could not be loaded") from error
+        if response.status_code >= 400:
+            raise CalendarPersistenceError("Task calendar link could not be loaded")
+        try:
+            payload: object = response.json()
+            if not isinstance(payload, list):
+                raise TypeError("Invalid task calendar link collection")
+            if not payload:
+                return None
+            return self._parse_task_event_link(payload[0])
+        except (KeyError, TypeError, ValueError) as error:
+            raise CalendarPersistenceError("Stored task calendar link is invalid") from error
+
+    async def upsert_task_event_link(self, link: TaskCalendarEventLink) -> None:
+        changed_at = datetime.now(UTC).isoformat()
+        try:
+            response = await self._http_client.post(
+                self._task_event_links_url,
+                params={"on_conflict": "task_id"},
+                headers=self._headers,
+                json={
+                    "user_id": str(link.user_id),
+                    "task_id": str(link.task_id),
+                    "provider_event_id": link.provider_event_id,
+                    "provider_calendar_id": link.provider_calendar_id,
+                    "start_time": link.start_time.isoformat(),
+                    "end_time": link.end_time.isoformat(),
+                    "updated_at": changed_at,
+                },
+            )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as error:
+            raise CalendarPersistenceError("Task calendar link could not be saved") from error
+        if response.status_code >= 400:
+            raise CalendarPersistenceError("Task calendar link could not be saved")
+
     @staticmethod
     def _serialize_event(event: CalendarEvent, synced_at: str) -> dict[str, object]:
         return {
@@ -205,6 +261,25 @@ class SupabaseCalendarRepository(CalendarRepository):
                 provider_updated_at=datetime.fromisoformat(
                     SupabaseCalendarRepository._required_string(row, "provider_updated_at")
                 ),
+            ),
+        )
+
+    @staticmethod
+    def _parse_task_event_link(row: object) -> TaskCalendarEventLink:
+        if not isinstance(row, dict):
+            raise TypeError("Invalid task calendar link row")
+        return TaskCalendarEventLink(
+            user_id=UUID(SupabaseCalendarRepository._required_string(row, "user_id")),
+            task_id=UUID(SupabaseCalendarRepository._required_string(row, "task_id")),
+            provider_event_id=SupabaseCalendarRepository._required_string(row, "provider_event_id"),
+            provider_calendar_id=SupabaseCalendarRepository._required_string(
+                row, "provider_calendar_id"
+            ),
+            start_time=datetime.fromisoformat(
+                SupabaseCalendarRepository._required_string(row, "start_time")
+            ),
+            end_time=datetime.fromisoformat(
+                SupabaseCalendarRepository._required_string(row, "end_time")
             ),
         )
 

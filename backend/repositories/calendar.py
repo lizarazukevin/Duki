@@ -7,6 +7,7 @@ from backend.models.calendar import (
     CalendarEventCursor,
     CalendarEventPage,
     CalendarSyncWindow,
+    TaskCalendarEventLink,
 )
 
 
@@ -29,3 +30,11 @@ class CalendarRepository(Protocol):
         provider_calendar_id: str,
         provider_event_ids: Sequence[str],
     ) -> None: ...
+
+    async def get_task_event_link(
+        self,
+        user_id: UUID,
+        task_id: UUID,
+    ) -> TaskCalendarEventLink | None: ...
+
+    async def upsert_task_event_link(self, link: TaskCalendarEventLink) -> None: ...

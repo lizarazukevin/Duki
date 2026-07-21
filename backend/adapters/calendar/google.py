@@ -19,6 +19,7 @@ from backend.models.calendar import (
     CalendarEventStatus,
     CalendarEventTransparency,
     CalendarFetchResult,
+    CalendarWriteResult,
 )
 
 GOOGLE_CALENDAR_API_URL = "https://www.googleapis.com/calendar/v3"
@@ -100,6 +101,116 @@ class GoogleCalendarAdapter(CalendarAdapter):
             cancelled_event_ids=tuple(cancelled_event_ids),
             refreshed_credentials=refreshed_credentials,
         )
+
+    async def create_event(
+        self,
+        credentials: GoogleCredentials,
+        title: str,
+        description: str | None,
+        start_time: datetime,
+        end_time: datetime,
+        calendar_id: str = PRIMARY_CALENDAR_ID,
+    ) -> CalendarWriteResult:
+        active_credentials, refreshed_credentials = await self._prepare_credentials(credentials)
+        event = await self._write_event(
+            method="POST",
+            access_token=active_credentials.access_token,
+            calendar_id=calendar_id,
+            provider_event_id=None,
+            title=title,
+            description=description,
+            start_time=start_time,
+            end_time=end_time,
+            user_id=credentials.user_id,
+        )
+        return CalendarWriteResult(
+            event=event,
+            refreshed_credentials=refreshed_credentials,
+        )
+
+    async def update_event(
+        self,
+        credentials: GoogleCredentials,
+        provider_event_id: str,
+        title: str,
+        description: str | None,
+        start_time: datetime,
+        end_time: datetime,
+        calendar_id: str = PRIMARY_CALENDAR_ID,
+    ) -> CalendarWriteResult:
+        active_credentials, refreshed_credentials = await self._prepare_credentials(credentials)
+        event = await self._write_event(
+            method="PATCH",
+            access_token=active_credentials.access_token,
+            calendar_id=calendar_id,
+            provider_event_id=provider_event_id,
+            title=title,
+            description=description,
+            start_time=start_time,
+            end_time=end_time,
+            user_id=credentials.user_id,
+        )
+        return CalendarWriteResult(
+            event=event,
+            refreshed_credentials=refreshed_credentials,
+        )
+
+    async def _prepare_credentials(
+        self,
+        credentials: GoogleCredentials,
+    ) -> tuple[GoogleCredentials, GoogleCredentials | None]:
+        if not self._needs_refresh(credentials):
+            return credentials, None
+        refreshed = await self._refresh_credentials(credentials)
+        return refreshed, refreshed
+
+    async def _write_event(
+        self,
+        *,
+        method: str,
+        access_token: str,
+        calendar_id: str,
+        provider_event_id: str | None,
+        title: str,
+        description: str | None,
+        start_time: datetime,
+        end_time: datetime,
+        user_id: UUID,
+    ) -> CalendarEvent:
+        events_url = f"{GOOGLE_CALENDAR_API_URL}/calendars/{quote(calendar_id, safe='')}/events"
+        url = (
+            events_url
+            if provider_event_id is None
+            else f"{events_url}/{quote(provider_event_id, safe='')}"
+        )
+        payload: dict[str, object] = {
+            "summary": title,
+            "description": description,
+            "start": {"dateTime": start_time.isoformat()},
+            "end": {"dateTime": end_time.isoformat()},
+        }
+        try:
+            response = await self._http_client.request(
+                method,
+                url,
+                headers={"Authorization": f"Bearer {access_token}"},
+                json=payload,
+            )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as error:
+            raise CalendarUnavailableError("Google Calendar is temporarily unavailable") from error
+        self._raise_for_calendar_error(response)
+        try:
+            response_payload: object = response.json()
+            if not isinstance(response_payload, dict):
+                raise TypeError("Invalid calendar event payload")
+            return self._parse_event(
+                item=response_payload,
+                user_id=user_id,
+                calendar_id=calendar_id,
+                calendar_timezone=ZoneInfo("UTC"),
+            )
+        except (TypeError, ValueError) as error:
+            raise CalendarUnavailableError("Google Calendar returned invalid data") from error
 
     @staticmethod
     def _needs_refresh(credentials: GoogleCredentials) -> bool:

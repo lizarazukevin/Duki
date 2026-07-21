@@ -84,18 +84,20 @@ export function InteractiveDuck() {
         alt=""
         aria-hidden="true"
         className="home-duck duck-awake"
-        height={1254}
+        height={720}
         priority
-        src="/images/duky-3d.png"
-        width={1254}
+        sizes="(max-width: 560px) 88vw, 360px"
+        src="/images/duky-3d.webp"
+        width={720}
       />
       <Image
         alt=""
         aria-hidden="true"
         className="home-duck duck-blink"
-        height={1254}
-        src="/images/duky-3d-blink.png"
-        width={1254}
+        height={720}
+        sizes="(max-width: 560px) 88vw, 360px"
+        src="/images/duky-3d-blink.webp"
+        width={720}
       />
     </button>
   );

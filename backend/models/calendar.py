@@ -47,6 +47,26 @@ class CalendarFetchResult:
 
 
 @dataclass(frozen=True, slots=True)
+class CalendarWriteResult:
+    """One provider event write plus any refreshed credentials it produced."""
+
+    event: CalendarEvent
+    refreshed_credentials: GoogleCredentials | None
+
+
+@dataclass(frozen=True, slots=True)
+class TaskCalendarEventLink:
+    """Stable relationship between a Duky task and its provider event."""
+
+    user_id: UUID
+    task_id: UUID
+    provider_event_id: str
+    provider_calendar_id: str
+    start_time: datetime
+    end_time: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class CalendarSyncWindow:
     start_time: datetime
     end_time: datetime
