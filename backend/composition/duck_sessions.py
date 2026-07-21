@@ -14,8 +14,10 @@ from backend.errors import DuckSessionConfigurationError, FeatureDisabledError
 from backend.repositories.postgres.supabase_duck_sessions import (
     SupabaseDuckSessionRepository,
 )
+from backend.repositories.postgres.supabase_tasks import SupabaseTaskRepository
 from backend.services.duck_session_query_service import DuckSessionQueryService
 from backend.services.duck_session_service import DuckSessionService
+from backend.services.task_deduplication_service import TaskDeduplicationService
 from backend.services.transcript_normalization_service import TranscriptNormalizationService
 
 
@@ -99,6 +101,8 @@ def provide_duck_session_service(request: Request) -> DuckSessionService:
         task_extraction_adapter=_task_extraction_adapter(settings, http_client),
         session_repository=_session_repository(supabase_url, secret_key, http_client),
         transcript_normalization_service=TranscriptNormalizationService(),
+        task_repository=SupabaseTaskRepository(http_client, supabase_url, secret_key),
+        task_deduplication_service=TaskDeduplicationService(),
     )
 
 

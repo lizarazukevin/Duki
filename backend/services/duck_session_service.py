@@ -17,16 +17,16 @@ from backend.errors import (
 from backend.models.duck_sessions import (
     DuckSession,
     DuckSessionStatus,
-    ExtractedTask,
     ExtractedTaskTree,
     NormalizedTranscript,
 )
-from backend.models.tasks import Task, TaskStatus
 from backend.repositories.duck_sessions import DuckSessionRepository
+from backend.repositories.tasks import TaskRepository
+from backend.services.task_deduplication_service import TaskDeduplicationService
 from backend.services.transcript_normalization_service import TranscriptNormalizationService
 
-TASK_EXTRACTION_ATTEMPTS = 2
-TASK_EXTRACTION_RETRY_DELAY_SECONDS = 0.25
+TASK_EXTRACTION_ATTEMPTS = 3
+TASK_EXTRACTION_RETRY_BASE_SECONDS = 1.0
 
 logger = logging.getLogger(LOGGER_NAME)
 
@@ -40,11 +40,15 @@ class DuckSessionService:
         task_extraction_adapter: TaskExtractionAdapter,
         session_repository: DuckSessionRepository,
         transcript_normalization_service: TranscriptNormalizationService,
+        task_repository: TaskRepository,
+        task_deduplication_service: TaskDeduplicationService,
     ) -> None:
         self._voice_adapter = voice_adapter
         self._task_extraction_adapter = task_extraction_adapter
         self._session_repository = session_repository
         self._transcript_normalization_service = transcript_normalization_service
+        self._task_repository = task_repository
+        self._task_deduplication_service = task_deduplication_service
 
     async def process_audio(
         self,
@@ -75,17 +79,29 @@ class DuckSessionService:
                 normalized_transcript,
                 user_identifier=str(user_id),
             )
-            tasks = self._build_tasks(user_id, extracted_tree.root)
             finished_at = datetime.now(UTC)
+            existing_tasks = await self._task_repository.list_tasks(
+                user_id,
+                include_archived=False,
+            )
+            reconciled_tree = self._task_deduplication_service.reconcile(
+                user_id,
+                extracted_tree.root,
+                existing_tasks,
+                finished_at,
+            )
             completed_session = replace(
                 session,
                 status=DuckSessionStatus.COMPLETED,
                 transcript=normalized_text,
-                root_task_id=tasks[0].id,
+                root_task_id=reconciled_tree.root_task_id,
                 finished_at=finished_at,
                 updated_at=finished_at,
             )
-            await self._session_repository.complete_session(completed_session, tasks)
+            await self._session_repository.complete_session(
+                completed_session,
+                reconciled_tree.new_tasks,
+            )
             return completed_session
         except (TranscriptionError, TaskExtractionError) as error:
             await self._record_failure(session, normalized_text, error.code)
@@ -102,10 +118,13 @@ class DuckSessionService:
                     transcript,
                     user_identifier,
                 )
-            except TaskExtractionRateLimitError:
+            except TaskExtractionRateLimitError as error:
                 if attempt + 1 == TASK_EXTRACTION_ATTEMPTS:
                     raise
-                await asyncio.sleep(TASK_EXTRACTION_RETRY_DELAY_SECONDS)
+                retry_delay = error.retry_after_seconds or (
+                    TASK_EXTRACTION_RETRY_BASE_SECONDS * (2**attempt)
+                )
+                await asyncio.sleep(retry_delay)
         raise AssertionError("Task extraction attempts must be positive")
 
     async def _record_failure(
@@ -132,38 +151,3 @@ class DuckSessionService:
                 session.id,
                 failure_code,
             )
-
-    @staticmethod
-    def _build_tasks(user_id: UUID, root: ExtractedTask) -> tuple[Task, ...]:
-        created_at = datetime.now(UTC)
-        tasks: list[Task] = []
-
-        def append_task(
-            extracted: ExtractedTask, parent_task_id: UUID | None, position: int
-        ) -> None:
-            task_id = uuid4()
-            tasks.append(
-                Task(
-                    id=task_id,
-                    user_id=user_id,
-                    parent_task_id=parent_task_id,
-                    title=extracted.title.strip(),
-                    description=extracted.description,
-                    category=extracted.category,
-                    status=TaskStatus.PENDING,
-                    estimated_minutes=extracted.estimated_minutes,
-                    initial_easiness_score=extracted.initial_easiness_score,
-                    easiness_source=extracted.easiness_source,
-                    scheduled_date=None,
-                    due_at=None,
-                    position=position,
-                    completed_at=None,
-                    created_at=created_at,
-                    updated_at=created_at,
-                )
-            )
-            for child_position, child in enumerate(extracted.children):
-                append_task(child, task_id, child_position)
-
-        append_task(root, None, 0)
-        return tuple(tasks)

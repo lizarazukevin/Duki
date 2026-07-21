@@ -18,6 +18,7 @@ from backend.errors import (
 from backend.models.duck_sessions import ExtractedTaskTree, NormalizedTranscript
 
 TASK_EXTRACTION_TIMEOUT_SECONDS = 90.0
+MAX_RETRY_AFTER_SECONDS = 10.0
 _MODEL_PATTERN = re.compile(r"^[A-Za-z0-9._:/-]+$")
 _NETWORK_ERRORS = (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError)
 
@@ -80,7 +81,10 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
         if response.status_code in {401, 403}:
             raise TaskExtractionConfigurationError("Task extraction is not authorized")
         if response.status_code == 429:
-            raise TaskExtractionRateLimitError("Task extraction is rate limited")
+            raise TaskExtractionRateLimitError(
+                "Task extraction is rate limited",
+                retry_after_seconds=self._retry_after_seconds(response),
+            )
         if response.status_code >= 400:
             logger.warning(
                 "task_extraction_provider_error provider=groq status=%s error_type=%s "
@@ -162,3 +166,16 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
             if marker in normalized_message:
                 return category
         return "unclassified"
+
+    @staticmethod
+    def _retry_after_seconds(response: httpx.Response) -> float | None:
+        retry_after = response.headers.get("retry-after")
+        if retry_after is None:
+            return None
+        try:
+            parsed_delay = float(retry_after)
+        except ValueError:
+            return None
+        if parsed_delay <= 0:
+            return None
+        return min(parsed_delay, MAX_RETRY_AFTER_SECONDS)
