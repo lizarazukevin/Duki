@@ -9,6 +9,9 @@ from functools import lru_cache
 class Settings:
     app_environment: str
     auth_enabled: bool
+    supabase_url: str | None
+    supabase_publishable_key: str | None
+    allowed_oauth_redirect_hosts: frozenset[str]
 
     @property
     def is_local(self) -> bool:
@@ -24,4 +27,11 @@ def get_settings() -> Settings:
     return Settings(
         app_environment=os.getenv("APP_ENV", "local").lower(),
         auth_enabled=_is_enabled(os.getenv("AUTH_ENABLED", "false")),
+        supabase_url=os.getenv("SUPABASE_URL"),
+        supabase_publishable_key=os.getenv("SUPABASE_PUBLISHABLE_KEY"),
+        allowed_oauth_redirect_hosts=frozenset(
+            host.strip().lower()
+            for host in os.getenv("ALLOWED_OAUTH_REDIRECT_HOSTS", "localhost,127.0.0.1").split(",")
+            if host.strip()
+        ),
     )
