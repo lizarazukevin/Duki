@@ -181,6 +181,11 @@ class MoodConfigurationError(DukiError):
     status_code = 503
 
 
+class SchedulerConfigurationError(DukiError):
+    code = "scheduler_configuration_error"
+    status_code = 503
+
+
 class RedirectNotAllowedError(DukiError):
     code = "redirect_not_allowed"
     status_code = 422

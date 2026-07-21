@@ -20,6 +20,7 @@ from backend.routers.duck_sessions import router as duck_sessions_router
 from backend.routers.goals import router as goals_router
 from backend.routers.health import router as health_router
 from backend.routers.moods import router as moods_router
+from backend.routers.schedule_plans import router as schedule_plans_router
 from backend.routers.tasks import router as tasks_router
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -65,6 +66,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(tasks_router, prefix=API_V1_PREFIX)
     app.include_router(goals_router, prefix=API_V1_PREFIX)
     app.include_router(moods_router, prefix=API_V1_PREFIX)
+    app.include_router(schedule_plans_router, prefix=API_V1_PREFIX)
 
     @app.exception_handler(DukiError)
     async def handle_domain_error(request: Request, error: DukiError) -> JSONResponse:

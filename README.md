@@ -9,6 +9,9 @@ backend run configuration to enable them.
 Daily mood endpoints are private and disabled by default. Set `MOODS_ENABLED=true` in
 the backend run configuration to enable calendar-aware mood tracking.
 
+Daily schedule plans are private and disabled by default. Set `SCHEDULER_ENABLED=true`
+to rank tasks into free blocks from the primary Google calendar.
+
 Voice transcription and structured task extraction use Groq's free-plan models by
 default. Set `DUCK_SESSIONS_ENABLED=true` and `GROQ_API_KEY` in the backend run
 configuration. `TRANSCRIPTION_PROVIDER=openai` or `TASK_EXTRACTION_PROVIDER=openai`
