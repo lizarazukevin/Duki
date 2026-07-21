@@ -1,1 +1,366 @@
 @import "tailwindcss";
+
+:root {
+  --paper: #f3efe4;
+  --ink: #151515;
+  --signal: #ffd447;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Mona Sans Variable", sans-serif;
+  font-variation-settings: "wdth" 100;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.entry-page {
+  min-height: 100svh;
+  overflow: hidden;
+  padding: 22px 24px 0;
+}
+
+.masthead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  border-top: 1px solid var(--ink);
+  padding-top: 12px;
+}
+
+.wordmark {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  font-size: 1.25rem;
+  font-weight: 760;
+  letter-spacing: -0.05em;
+}
+
+.wordmark-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--signal);
+  border: 1px solid var(--ink);
+  border-radius: 50%;
+}
+
+.masthead-note {
+  display: grid;
+  min-width: 220px;
+  grid-template-columns: auto auto;
+  gap: 32px;
+  font-size: 0.68rem;
+  font-weight: 620;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.entry-grid {
+  display: grid;
+  min-height: calc(100svh - 126px);
+  grid-template-columns: minmax(0, 6fr) minmax(260px, 2.7fr) minmax(
+      300px,
+      3.3fr
+    );
+  grid-template-rows: auto 1fr;
+  margin-top: 48px;
+}
+
+.title-block {
+  z-index: 2;
+  grid-column: 1 / 3;
+  grid-row: 1;
+  align-self: start;
+  padding-right: 4vw;
+}
+
+.eyebrow,
+.section-number {
+  margin: 0 0 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.title-block h1 {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(4rem, 8vw, 8.5rem);
+  font-weight: 780;
+  letter-spacing: -0.075em;
+  line-height: 0.78;
+}
+
+.title-block h1 em {
+  font-style: normal;
+  font-variation-settings: "wdth" 82;
+  font-weight: 300;
+}
+
+.lede {
+  max-width: 440px;
+  margin: 34px 0 0 12vw;
+  font-size: clamp(1rem, 1.4vw, 1.28rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1.35;
+}
+
+.duck-plate {
+  position: relative;
+  grid-column: 1 / 3;
+  grid-row: 2;
+  width: min(58vw, 760px);
+  margin: -24px 0 0 -24px;
+  align-self: end;
+  border-top: 1px solid var(--ink);
+  border-right: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.duck-image {
+  display: block;
+  width: 100%;
+  height: clamp(260px, 36vh, 440px);
+  object-fit: cover;
+  object-position: center 66%;
+  filter: saturate(0.96) contrast(1.04);
+}
+
+.duck-plate figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--ink);
+  padding: 9px 12px 10px 24px;
+  font-size: 0.65rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sign-in-panel {
+  grid-column: 3;
+  grid-row: 1 / 3;
+  align-self: end;
+  margin: 0 0 9vh 3vw;
+  border-top: 1px solid var(--ink);
+  padding-top: 14px;
+}
+
+.section-number {
+  margin-bottom: clamp(38px, 7vh, 92px);
+}
+
+.sign-in-panel h2 {
+  max-width: 410px;
+  margin: 0;
+  font-size: clamp(2rem, 3.4vw, 4.2rem);
+  font-variation-settings: "wdth" 88;
+  font-weight: 680;
+  letter-spacing: -0.06em;
+  line-height: 0.93;
+}
+
+.panel-copy {
+  max-width: 390px;
+  margin: 26px 0 36px;
+  font-size: 0.95rem;
+  font-weight: 510;
+  line-height: 1.5;
+}
+
+.google-button {
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  grid-template-columns: 30px 1fr 24px;
+  align-items: center;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--signal);
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0 14px;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 760;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+
+.google-button:hover:not(:disabled),
+.google-button:focus-visible {
+  background: var(--ink);
+  color: var(--paper);
+  outline: none;
+}
+
+.google-button:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.google-mark {
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.button-arrow {
+  text-align: right;
+  font-size: 1.15rem;
+}
+
+.privacy-note {
+  max-width: 360px;
+  margin: 14px 0 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.entry-footer {
+  display: grid;
+  grid-template-columns: repeat(3, auto) 1fr;
+  gap: 30px;
+  align-items: center;
+  border-top: 1px solid var(--ink);
+  padding: 13px 0 15px;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.entry-footer p {
+  margin: 0;
+}
+
+.entry-footer span {
+  justify-self: end;
+}
+
+@media (max-width: 980px) {
+  .entry-grid {
+    grid-template-columns: 1fr minmax(290px, 0.72fr);
+    grid-template-rows: auto auto;
+  }
+
+  .title-block {
+    grid-column: 1 / 3;
+  }
+
+  .duck-plate {
+    grid-column: 1;
+    width: calc(100% + 24px);
+    margin-top: 50px;
+  }
+
+  .sign-in-panel {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 70px 0 50px 30px;
+  }
+}
+
+@media (max-width: 700px) {
+  .entry-page {
+    padding: 16px 16px 0;
+  }
+
+  .masthead-note {
+    min-width: 0;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    text-align: right;
+  }
+
+  .masthead-note span:last-child {
+    display: none;
+  }
+
+  .entry-grid {
+    display: flex;
+    min-height: auto;
+    flex-direction: column;
+    margin-top: 62px;
+  }
+
+  .title-block,
+  .duck-plate,
+  .sign-in-panel {
+    align-self: stretch;
+  }
+
+  .title-block h1 {
+    font-size: clamp(3.5rem, 17vw, 6rem);
+    line-height: 0.82;
+  }
+
+  .lede {
+    max-width: 320px;
+    margin: 28px 0 0 16vw;
+  }
+
+  .duck-plate {
+    order: 2;
+    width: calc(100% + 16px);
+    margin: 54px 0 0 -16px;
+  }
+
+  .duck-image {
+    height: 330px;
+  }
+
+  .sign-in-panel {
+    order: 3;
+    margin: 62px 0 76px 13vw;
+  }
+
+  .section-number {
+    margin-bottom: 50px;
+  }
+
+  .sign-in-panel h2 {
+    font-size: clamp(2.5rem, 13vw, 4.2rem);
+  }
+
+  .entry-footer {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 8px;
+  }
+
+  .entry-footer p:nth-child(3) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .google-button {
+    transition: none;
+  }
+}
