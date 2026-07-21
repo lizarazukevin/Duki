@@ -60,7 +60,7 @@ class OpenAICompatibleVoiceAdapter(VoiceAdapter):
         if extension is None:
             raise UnsupportedAudioTypeError("The audio format is not supported")
 
-        boundary = f"duki-{uuid4().hex}"
+        boundary = f"duky-{uuid4().hex}"
         try:
             response = await self._http_client.post(
                 self._transcriptions_url,

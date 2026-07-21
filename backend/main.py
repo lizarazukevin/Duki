@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from backend.config import Settings, get_settings
 from backend.constants import API_TITLE, API_V1_PREFIX, LOGGER_NAME
-from backend.errors import DukiError
+from backend.errors import DukyError
 from backend.routers.auth import router as auth_router
 from backend.routers.calendar_events import router as calendar_events_router
 from backend.routers.calendar_free_blocks import router as calendar_free_blocks_router
@@ -68,8 +68,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(moods_router, prefix=API_V1_PREFIX)
     app.include_router(schedule_plans_router, prefix=API_V1_PREFIX)
 
-    @app.exception_handler(DukiError)
-    async def handle_domain_error(request: Request, error: DukiError) -> JSONResponse:
+    @app.exception_handler(DukyError)
+    async def handle_domain_error(request: Request, error: DukyError) -> JSONResponse:
         logger.warning("domain_error code=%s path=%s", error.code, request.url.path)
         return JSONResponse(
             status_code=error.status_code,

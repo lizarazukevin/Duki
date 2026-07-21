@@ -76,7 +76,7 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
                     "response_format": {
                         "type": "json_schema",
                         "json_schema": {
-                            "name": "duki_task_tree",
+                            "name": "duky_task_tree",
                             "strict": True,
                             "schema": TASK_TREE_SCHEMA,
                         },

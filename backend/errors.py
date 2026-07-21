@@ -1,11 +1,11 @@
-class DukiError(Exception):
+class DukyError(Exception):
     """Base class for expected domain failures."""
 
     code = "domain_error"
     status_code = 400
 
 
-class TranscriptionError(DukiError):
+class TranscriptionError(DukyError):
     code = "transcription_failed"
     status_code = 503
 
@@ -33,7 +33,7 @@ class TranscriptionConfigurationError(TranscriptionError):
     code = "transcription_configuration_error"
 
 
-class TaskExtractionError(DukiError):
+class TaskExtractionError(DukyError):
     code = "task_extraction_failed"
     status_code = 503
 
@@ -59,156 +59,156 @@ class TaskExtractionConfigurationError(TaskExtractionError):
     code = "task_extraction_configuration_error"
 
 
-class DuckSessionNotFoundError(DukiError):
+class DuckSessionNotFoundError(DukyError):
     code = "duck_session_not_found"
     status_code = 404
 
 
-class DuckSessionPersistenceError(DukiError):
+class DuckSessionPersistenceError(DukyError):
     code = "duck_session_persistence_unavailable"
     status_code = 503
 
 
-class DuckSessionConfirmationConflictError(DukiError):
+class DuckSessionConfirmationConflictError(DukyError):
     code = "duck_session_confirmation_conflict"
     status_code = 409
 
 
-class DuckSessionConfigurationError(DukiError):
+class DuckSessionConfigurationError(DukyError):
     code = "duck_session_configuration_error"
     status_code = 503
 
 
-class AuthConfigurationError(DukiError):
+class AuthConfigurationError(DukyError):
     code = "auth_configuration_error"
     status_code = 503
 
 
-class CalendarPersistenceError(DukiError):
+class CalendarPersistenceError(DukyError):
     code = "calendar_persistence_unavailable"
     status_code = 503
 
 
-class CalendarAuthorizationError(DukiError):
+class CalendarAuthorizationError(DukyError):
     code = "calendar_authorization_failed"
     status_code = 401
 
 
-class CalendarConfigurationError(DukiError):
+class CalendarConfigurationError(DukyError):
     code = "calendar_configuration_error"
     status_code = 503
 
 
-class CalendarRateLimitError(DukiError):
+class CalendarRateLimitError(DukyError):
     code = "calendar_rate_limited"
     status_code = 503
 
 
-class CalendarUnavailableError(DukiError):
+class CalendarUnavailableError(DukyError):
     code = "calendar_unavailable"
     status_code = 503
 
 
-class GoogleCredentialsNotFoundError(DukiError):
+class GoogleCredentialsNotFoundError(DukyError):
     code = "google_credentials_not_found"
     status_code = 409
 
 
-class AuthenticationError(DukiError):
+class AuthenticationError(DukyError):
     code = "invalid_session"
     status_code = 401
 
 
-class AuthorizationExchangeError(DukiError):
+class AuthorizationExchangeError(DukyError):
     code = "authorization_exchange_failed"
     status_code = 401
 
 
-class CredentialEncryptionError(DukiError):
+class CredentialEncryptionError(DukyError):
     code = "credential_encryption_failed"
     status_code = 500
 
 
-class FeatureDisabledError(DukiError):
+class FeatureDisabledError(DukyError):
     code = "feature_disabled"
     status_code = 503
 
 
-class IdentityProviderUnavailableError(DukiError):
+class IdentityProviderUnavailableError(DukyError):
     code = "identity_provider_unavailable"
     status_code = 503
 
 
-class InvalidPaginationCursorError(DukiError):
+class InvalidPaginationCursorError(DukyError):
     code = "invalid_pagination_cursor"
     status_code = 422
 
 
-class PersistenceError(DukiError):
+class PersistenceError(DukyError):
     code = "persistence_unavailable"
     status_code = 503
 
 
-class TaskNotFoundError(DukiError):
+class TaskNotFoundError(DukyError):
     code = "task_not_found"
     status_code = 404
 
 
-class TaskConfigurationError(DukiError):
+class TaskConfigurationError(DukyError):
     code = "task_configuration_error"
     status_code = 503
 
 
-class InvalidTaskHierarchyError(DukiError):
+class InvalidTaskHierarchyError(DukyError):
     code = "invalid_task_hierarchy"
     status_code = 422
 
 
-class TaskPersistenceError(DukiError):
+class TaskPersistenceError(DukyError):
     code = "task_persistence_unavailable"
     status_code = 503
 
 
-class TaskCompletionConflictError(DukiError):
+class TaskCompletionConflictError(DukyError):
     code = "task_completion_conflict"
     status_code = 409
 
 
-class GoalNotFoundError(DukiError):
+class GoalNotFoundError(DukyError):
     code = "goal_not_found"
     status_code = 404
 
 
-class GoalPersistenceError(DukiError):
+class GoalPersistenceError(DukyError):
     code = "goal_persistence_unavailable"
     status_code = 503
 
 
-class MoodNotFoundError(DukiError):
+class MoodNotFoundError(DukyError):
     code = "mood_not_found"
     status_code = 404
 
 
-class MoodPersistenceError(DukiError):
+class MoodPersistenceError(DukyError):
     code = "mood_persistence_unavailable"
     status_code = 503
 
 
-class MoodConfigurationError(DukiError):
+class MoodConfigurationError(DukyError):
     code = "mood_configuration_error"
     status_code = 503
 
 
-class SchedulerConfigurationError(DukiError):
+class SchedulerConfigurationError(DukyError):
     code = "scheduler_configuration_error"
     status_code = 503
 
 
-class RedirectNotAllowedError(DukiError):
+class RedirectNotAllowedError(DukyError):
     code = "redirect_not_allowed"
     status_code = 422
 
 
-class SessionRefreshError(DukiError):
+class SessionRefreshError(DukyError):
     code = "session_refresh_failed"
     status_code = 401

@@ -1,5 +1,5 @@
 [project]
-name = "duki-backend"
+name = "duky-backend"
 version = "0.1.0"
 description = "Mood-based productivity backend"
 requires-python = ">=3.14,<3.15"

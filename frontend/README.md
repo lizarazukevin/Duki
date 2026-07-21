@@ -1,6 +1,6 @@
-# Duki Frontend
+# Duky Frontend
 
-The mobile-first Duki web client uses Next.js App Router, TypeScript, Tailwind CSS,
+The mobile-first Duky web client uses Next.js App Router, TypeScript, Tailwind CSS,
 Biome, and Supabase Auth.
 
 Configure these public values in the PyCharm run configuration and in the deployment

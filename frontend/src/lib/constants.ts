@@ -1,1 +1,1 @@
-export const PRODUCT_NAME = "Duki";
+export const PRODUCT_NAME = "Duky";

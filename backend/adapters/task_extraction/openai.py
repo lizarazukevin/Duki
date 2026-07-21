@@ -70,7 +70,7 @@ class OpenAITaskExtractionAdapter(TaskExtractionAdapter):
                     "text": {
                         "format": {
                             "type": "json_schema",
-                            "name": "duki_task_tree",
+                            "name": "duky_task_tree",
                             "strict": True,
                             "schema": TASK_TREE_SCHEMA,
                         }

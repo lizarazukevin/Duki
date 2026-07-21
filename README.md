@@ -1,4 +1,4 @@
-# Duki
+# Duky
 Maximize productivity with mood-based task management and a bright yellow rubber duck.
 
 ## Backend feature flags
