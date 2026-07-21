@@ -4,6 +4,8 @@ import httpx
 from fastapi import Request
 
 from backend.adapters.task_extraction.openai import OpenAITaskExtractionAdapter
+from backend.adapters.voice.base import VoiceAdapter
+from backend.adapters.voice.groq import GroqVoiceAdapter
 from backend.adapters.voice.openai import OpenAIVoiceAdapter
 from backend.config import Settings
 from backend.errors import DuckSessionConfigurationError, FeatureDisabledError
@@ -43,18 +45,34 @@ def _session_repository(
     )
 
 
+def _voice_adapter(settings: Settings, http_client: httpx.AsyncClient) -> VoiceAdapter:
+    if settings.transcription_provider == "groq":
+        if not settings.groq_api_key:
+            raise DuckSessionConfigurationError("Groq transcription is not configured")
+        return GroqVoiceAdapter(
+            http_client=http_client,
+            api_key=settings.groq_api_key,
+            model=settings.groq_transcription_model,
+        )
+    if settings.transcription_provider == "openai":
+        if not settings.openai_api_key:
+            raise DuckSessionConfigurationError("OpenAI transcription is not configured")
+        return OpenAIVoiceAdapter(
+            http_client=http_client,
+            api_key=settings.openai_api_key,
+            model=settings.openai_transcription_model,
+        )
+    raise DuckSessionConfigurationError("Transcription provider is not supported")
+
+
 def provide_duck_session_service(request: Request) -> DuckSessionService:
     """Compose the private voice-to-task workflow from swappable ports."""
     settings, supabase_url, secret_key, http_client = _session_dependencies(request)
     if not settings.openai_api_key:
-        raise DuckSessionConfigurationError("Voice processing is not configured")
+        raise DuckSessionConfigurationError("Task extraction is not configured")
 
     return DuckSessionService(
-        voice_adapter=OpenAIVoiceAdapter(
-            http_client=http_client,
-            api_key=settings.openai_api_key,
-            model=settings.openai_transcription_model,
-        ),
+        voice_adapter=_voice_adapter(settings, http_client),
         task_extraction_adapter=OpenAITaskExtractionAdapter(
             http_client=http_client,
             api_key=settings.openai_api_key,

@@ -10,7 +10,6 @@ from backend.adapters.voice.base import VoiceAdapter
 from backend.constants import LOGGER_NAME
 from backend.errors import (
     DuckSessionPersistenceError,
-    OpenAIConfigurationError,
     TaskExtractionError,
     TaskExtractionRateLimitError,
     TranscriptionError,
@@ -74,7 +73,7 @@ class DuckSessionService:
             normalized_text = normalized_transcript.text
             extracted_tree = await self._extract_with_retry(
                 normalized_transcript,
-                safety_identifier=str(user_id),
+                user_identifier=str(user_id),
             )
             tasks = self._build_tasks(user_id, extracted_tree.root)
             finished_at = datetime.now(UTC)
@@ -88,24 +87,20 @@ class DuckSessionService:
             )
             await self._session_repository.complete_session(completed_session, tasks)
             return completed_session
-        except (
-            TranscriptionError,
-            TaskExtractionError,
-            OpenAIConfigurationError,
-        ) as error:
+        except (TranscriptionError, TaskExtractionError) as error:
             await self._record_failure(session, normalized_text, error.code)
             raise
 
     async def _extract_with_retry(
         self,
         transcript: NormalizedTranscript,
-        safety_identifier: str,
+        user_identifier: str,
     ) -> ExtractedTaskTree:
         for attempt in range(TASK_EXTRACTION_ATTEMPTS):
             try:
                 return await self._task_extraction_adapter.extract_tasks(
                     transcript,
-                    safety_identifier,
+                    user_identifier,
                 )
             except TaskExtractionRateLimitError:
                 if attempt + 1 == TASK_EXTRACTION_ATTEMPTS:

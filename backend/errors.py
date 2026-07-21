@@ -29,6 +29,10 @@ class NoSpeechDetectedError(TranscriptionError):
     status_code = 422
 
 
+class TranscriptionConfigurationError(TranscriptionError):
+    code = "transcription_configuration_error"
+
+
 class TaskExtractionError(DukiError):
     code = "task_extraction_failed"
     status_code = 503
@@ -43,9 +47,8 @@ class NoTasksExtractedError(TaskExtractionError):
     status_code = 422
 
 
-class OpenAIConfigurationError(DukiError):
-    code = "openai_configuration_error"
-    status_code = 503
+class TaskExtractionConfigurationError(TaskExtractionError):
+    code = "task_extraction_configuration_error"
 
 
 class DuckSessionNotFoundError(DukiError):

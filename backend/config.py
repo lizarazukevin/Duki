@@ -4,7 +4,12 @@ import os
 from dataclasses import dataclass
 from functools import lru_cache
 
-from backend.constants import DEFAULT_TASK_EXTRACTION_MODEL, DEFAULT_TRANSCRIPTION_MODEL
+from backend.constants import (
+    DEFAULT_GROQ_TRANSCRIPTION_MODEL,
+    DEFAULT_OPENAI_TASK_EXTRACTION_MODEL,
+    DEFAULT_OPENAI_TRANSCRIPTION_MODEL,
+    DEFAULT_TRANSCRIPTION_PROVIDER,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +24,9 @@ class Settings:
     supabase_secret_key: str | None
     google_oauth_client_id: str | None
     google_oauth_client_secret: str | None
+    transcription_provider: str
+    groq_api_key: str | None
+    groq_transcription_model: str
     openai_api_key: str | None
     openai_transcription_model: str
     openai_task_extraction_model: str
@@ -47,12 +55,19 @@ def get_settings() -> Settings:
         supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY"),
         google_oauth_client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
         google_oauth_client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
+        transcription_provider=os.getenv("TRANSCRIPTION_PROVIDER", DEFAULT_TRANSCRIPTION_PROVIDER)
+        .strip()
+        .lower(),
+        groq_api_key=os.getenv("GROQ_API_KEY"),
+        groq_transcription_model=os.getenv(
+            "GROQ_TRANSCRIPTION_MODEL", DEFAULT_GROQ_TRANSCRIPTION_MODEL
+        ),
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_transcription_model=os.getenv(
-            "OPENAI_TRANSCRIPTION_MODEL", DEFAULT_TRANSCRIPTION_MODEL
+            "OPENAI_TRANSCRIPTION_MODEL", DEFAULT_OPENAI_TRANSCRIPTION_MODEL
         ),
         openai_task_extraction_model=os.getenv(
-            "OPENAI_TASK_EXTRACTION_MODEL", DEFAULT_TASK_EXTRACTION_MODEL
+            "OPENAI_TASK_EXTRACTION_MODEL", DEFAULT_OPENAI_TASK_EXTRACTION_MODEL
         ),
         credential_encryption_keys=tuple(
             key.strip()

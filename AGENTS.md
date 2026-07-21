@@ -36,6 +36,10 @@ Writing and maintaining a test suite costs tokens and slows iteration at this st
 
 If unsure whether something qualifies, ask rather than defaulting either direction.
 
+Do not make live calls to paid external APIs during verification without the user's
+explicit approval. Use mocked transports by default, including for provider errors and
+credit or rate-limit behavior.
+
 **After every commit, output a "How to verify" block** — just the endpoint (method + path) and, if auth-gated, the token/header needed to call it in Postman. No curl scripts, no expected-response essays — the human is testing manually in Postman, so give them exactly what they need to paste in and nothing more.
 
 ## Graceful Error Handling — The Backend Must Never Crash

@@ -9,5 +9,5 @@ class TaskExtractionAdapter(Protocol):
     async def extract_tasks(
         self,
         transcript: NormalizedTranscript,
-        safety_identifier: str,
+        user_identifier: str,
     ) -> ExtractedTaskTree: ...
