@@ -156,6 +156,11 @@ class TaskPersistenceError(DukiError):
     status_code = 503
 
 
+class TaskCompletionConflictError(DukiError):
+    code = "task_completion_conflict"
+    status_code = 409
+
+
 class GoalNotFoundError(DukiError):
     code = "goal_not_found"
     status_code = 404

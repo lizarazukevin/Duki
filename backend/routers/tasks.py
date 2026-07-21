@@ -4,8 +4,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, Response, status
 
 from backend.composition.auth import require_current_user
-from backend.composition.tasks import provide_task_goal_service, provide_task_service
+from backend.composition.tasks import (
+    provide_task_completion_service,
+    provide_task_goal_service,
+    provide_task_service,
+)
 from backend.models.auth import AuthenticatedUser
+from backend.schemas.task_events import TaskCompletionRequest, TaskCompletionResponse
 from backend.schemas.tasks import (
     TaskCreateRequest,
     TaskResponse,
@@ -13,10 +18,25 @@ from backend.schemas.tasks import (
     TaskTreeResponse,
     TaskUpdateRequest,
 )
+from backend.services.task_completion_service import TaskCompletionService
 from backend.services.task_goal_service import TaskGoalService
 from backend.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+
+@router.post("/{task_id}/complete", response_model=TaskCompletionResponse)
+async def complete_task(
+    task_id: UUID,
+    body: TaskCompletionRequest,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[
+        TaskCompletionService,
+        Depends(provide_task_completion_service),
+    ],
+) -> TaskCompletionResponse:
+    result = await service.complete_task(user.id, task_id, body.to_domain())
+    return TaskCompletionResponse.from_domain(result)
 
 
 @router.get("", response_model=TaskTreeResponse)

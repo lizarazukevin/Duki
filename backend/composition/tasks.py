@@ -5,11 +5,15 @@ from fastapi import Request
 
 from backend.config import Settings
 from backend.errors import FeatureDisabledError, TaskConfigurationError
+from backend.repositories.postgres.supabase_task_events import (
+    SupabaseTaskCompletionRepository,
+)
 from backend.repositories.postgres.supabase_tasks import (
     SupabaseGoalRepository,
     SupabaseTaskRepository,
 )
 from backend.services.goal_service import GoalService
+from backend.services.task_completion_service import TaskCompletionService
 from backend.services.task_goal_service import TaskGoalService
 from backend.services.task_service import TaskService
 
@@ -36,6 +40,19 @@ def provide_task_service(request: Request) -> TaskService:
             supabase_url=supabase_url,
             secret_key=secret_key,
         )
+    )
+
+
+def provide_task_completion_service(request: Request) -> TaskCompletionService:
+    """Compose atomic task completion and audit persistence."""
+    supabase_url, secret_key, http_client = _task_dependencies(request)
+    return TaskCompletionService(
+        task_repository=SupabaseTaskRepository(http_client, supabase_url, secret_key),
+        completion_repository=SupabaseTaskCompletionRepository(
+            http_client,
+            supabase_url,
+            secret_key,
+        ),
     )
 
 

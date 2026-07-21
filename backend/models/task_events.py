@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
+from backend.models.tasks import Task
+
 
 class TaskEventType(StrEnum):
     COMPLETED = "completed"
@@ -66,3 +68,9 @@ class TaskEvent:
     def __post_init__(self) -> None:
         if self.occurred_at.utcoffset() is None:
             raise ValueError("Task event timestamp must include a timezone")
+
+
+@dataclass(frozen=True, slots=True)
+class TaskCompletionResult:
+    task: Task
+    event: TaskEvent
