@@ -10,6 +10,7 @@ from backend.models.tasks import (
     TaskDetail,
     TaskDraft,
     TaskStatus,
+    TaskTreeNode,
     TaskUpdate,
 )
 
@@ -135,3 +136,19 @@ class TaskUpdateRequest(BaseModel):
             due_at=self.due_at,
             position=self.position,
         )
+
+
+class TaskTreeNodeResponse(BaseModel):
+    task: TaskResponse
+    children: list[TaskTreeNodeResponse]
+
+    @classmethod
+    def from_domain(cls, node: TaskTreeNode) -> Self:
+        return cls(
+            task=TaskResponse.from_domain(node.task),
+            children=[cls.from_domain(child) for child in node.children],
+        )
+
+
+class TaskTreeResponse(BaseModel):
+    items: list[TaskTreeNodeResponse]

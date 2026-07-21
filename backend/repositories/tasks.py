@@ -1,7 +1,7 @@
 from typing import Protocol
 from uuid import UUID
 
-from backend.models.tasks import Goal, Task
+from backend.models.tasks import Goal, Task, TaskGoalLink
 
 
 class TaskRepository(Protocol):
@@ -12,6 +12,10 @@ class TaskRepository(Protocol):
     async def update_task(self, task: Task) -> None: ...
 
     async def get_task(self, user_id: UUID, task_id: UUID) -> Task: ...
+
+    async def list_tasks(self, user_id: UUID, include_archived: bool) -> tuple[Task, ...]: ...
+
+    async def list_goal_links(self, user_id: UUID) -> tuple[TaskGoalLink, ...]: ...
 
     async def delete_task(self, user_id: UUID, task_id: UUID) -> None: ...
 

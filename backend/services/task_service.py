@@ -1,9 +1,18 @@
+import asyncio
 from dataclasses import replace
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from backend.errors import InvalidTaskHierarchyError
-from backend.models.tasks import Task, TaskDetail, TaskDraft, TaskStatus, TaskUpdate
+from backend.models.tasks import (
+    Task,
+    TaskDetail,
+    TaskDraft,
+    TaskGoalLink,
+    TaskStatus,
+    TaskTreeNode,
+    TaskUpdate,
+)
 from backend.repositories.tasks import TaskRepository
 
 
@@ -74,6 +83,17 @@ class TaskService:
     async def delete_task(self, user_id: UUID, task_id: UUID) -> None:
         await self._task_repository.delete_task(user_id, task_id)
 
+    async def list_task_tree(
+        self,
+        user_id: UUID,
+        include_archived: bool,
+    ) -> tuple[TaskTreeNode, ...]:
+        tasks, goal_links = await asyncio.gather(
+            self._task_repository.list_tasks(user_id, include_archived),
+            self._task_repository.list_goal_links(user_id),
+        )
+        return build_task_tree(tasks, goal_links)
+
     async def _validate_parent(
         self,
         user_id: UUID,
@@ -88,3 +108,44 @@ class TaskService:
             visited_ids.add(ancestor_id)
             ancestor = await self._task_repository.get_task(user_id, ancestor_id)
             ancestor_id = ancestor.parent_task_id
+
+
+def build_task_tree(
+    tasks: tuple[Task, ...],
+    goal_links: tuple[TaskGoalLink, ...],
+) -> tuple[TaskTreeNode, ...]:
+    """Build a deterministic hierarchy without performing I/O."""
+    tasks_by_id = {task.id: task for task in tasks}
+    goal_ids_by_task: dict[UUID, list[UUID]] = {}
+    for link in goal_links:
+        if link.task_id in tasks_by_id:
+            goal_ids_by_task.setdefault(link.task_id, []).append(link.goal_id)
+
+    children_by_parent: dict[UUID | None, list[Task]] = {}
+    for task in tasks:
+        parent_id = task.parent_task_id if task.parent_task_id in tasks_by_id else None
+        children_by_parent.setdefault(parent_id, []).append(task)
+    for children in children_by_parent.values():
+        children.sort(key=lambda task: (task.position, task.created_at, task.id))
+
+    visited_ids: set[UUID] = set()
+
+    def build_node(task: Task, ancestor_ids: frozenset[UUID]) -> TaskTreeNode:
+        if task.id in ancestor_ids:
+            raise InvalidTaskHierarchyError("Stored task hierarchy contains a cycle")
+        visited_ids.add(task.id)
+        path = ancestor_ids | {task.id}
+        return TaskTreeNode(
+            task=TaskDetail(
+                task=task,
+                goal_ids=tuple(goal_ids_by_task.get(task.id, ())),
+            ),
+            children=tuple(
+                build_node(child, path) for child in children_by_parent.get(task.id, ())
+            ),
+        )
+
+    roots = tuple(build_node(task, frozenset()) for task in children_by_parent.get(None, ()))
+    if len(visited_ids) != len(tasks_by_id):
+        raise InvalidTaskHierarchyError("Stored task hierarchy contains a cycle")
+    return roots

@@ -1,15 +1,32 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from backend.composition.auth import require_current_user
 from backend.composition.tasks import provide_task_service
 from backend.models.auth import AuthenticatedUser
-from backend.schemas.tasks import TaskCreateRequest, TaskResponse, TaskUpdateRequest
+from backend.schemas.tasks import (
+    TaskCreateRequest,
+    TaskResponse,
+    TaskTreeNodeResponse,
+    TaskTreeResponse,
+    TaskUpdateRequest,
+)
 from backend.services.task_service import TaskService
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
+
+
+@router.get("", response_model=TaskTreeResponse)
+async def list_task_tree(
+    include_archived: Annotated[bool, Query()] = False,
+    *,
+    user: Annotated[AuthenticatedUser, Depends(require_current_user)],
+    service: Annotated[TaskService, Depends(provide_task_service)],
+) -> TaskTreeResponse:
+    task_tree = await service.list_task_tree(user.id, include_archived)
+    return TaskTreeResponse(items=[TaskTreeNodeResponse.from_domain(node) for node in task_tree])
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)

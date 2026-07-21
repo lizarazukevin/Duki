@@ -114,6 +114,18 @@ class TaskDetail:
 
 
 @dataclass(frozen=True, slots=True)
+class TaskGoalLink:
+    task_id: UUID
+    goal_id: UUID
+
+
+@dataclass(frozen=True, slots=True)
+class TaskTreeNode:
+    task: TaskDetail
+    children: tuple[TaskTreeNode, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Goal:
     """A user-owned goal that may group multiple tasks."""
 

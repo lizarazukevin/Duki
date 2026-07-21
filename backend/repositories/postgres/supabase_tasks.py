@@ -15,6 +15,7 @@ from backend.models.tasks import (
     GoalStatus,
     Task,
     TaskCategory,
+    TaskGoalLink,
     TaskStatus,
 )
 from backend.repositories.tasks import GoalRepository, TaskRepository
@@ -87,6 +88,45 @@ class SupabaseTaskRepository(TaskRepository):
             {"id": f"eq.{task_id}", "user_id": f"eq.{user_id}"},
         )
 
+    async def list_tasks(self, user_id: UUID, include_archived: bool) -> tuple[Task, ...]:
+        parameters = {
+            "select": "*",
+            "user_id": f"eq.{user_id}",
+            "order": "position.asc,created_at.asc,id.asc",
+        }
+        if not include_archived:
+            parameters["status"] = "neq.archived"
+        rows = await self._read_all(
+            self._tasks_url,
+            parameters,
+            "Tasks could not be loaded",
+        )
+        try:
+            return tuple(_parse_task(row) for row in rows)
+        except (KeyError, TypeError, ValueError) as error:
+            raise TaskPersistenceError("Stored tasks are invalid") from error
+
+    async def list_goal_links(self, user_id: UUID) -> tuple[TaskGoalLink, ...]:
+        rows = await self._read_all(
+            self._task_goals_url,
+            {
+                "select": "task_id,goal_id",
+                "user_id": f"eq.{user_id}",
+                "order": "created_at.asc,task_id.asc,goal_id.asc",
+            },
+            "Task goals could not be loaded",
+        )
+        try:
+            return tuple(
+                TaskGoalLink(
+                    task_id=UUID(_required_string(row, "task_id")),
+                    goal_id=UUID(_required_string(row, "goal_id")),
+                )
+                for row in rows
+            )
+        except (KeyError, TypeError, ValueError) as error:
+            raise TaskPersistenceError("Stored task goals are invalid") from error
+
     async def add_goal(self, user_id: UUID, task_id: UUID, goal_id: UUID) -> None:
         await self._write(
             "post",
@@ -154,6 +194,37 @@ class SupabaseTaskRepository(TaskRepository):
             raise TaskPersistenceError("Task data could not be saved") from error
         if response.status_code >= 400:
             raise TaskPersistenceError("Task data could not be saved")
+
+    async def _read_all(
+        self,
+        url: str,
+        parameters: dict[str, str],
+        error_message: str,
+    ) -> tuple[object, ...]:
+        page_size = 500
+        offset = 0
+        rows: list[object] = []
+        while True:
+            try:
+                response = await self._http_client.get(
+                    url,
+                    params={**parameters, "limit": str(page_size), "offset": str(offset)},
+                    headers={"apikey": self._headers["apikey"]},
+                )
+            except _NETWORK_ERRORS as error:
+                raise TaskPersistenceError(error_message) from error
+            if response.status_code >= 400:
+                raise TaskPersistenceError(error_message)
+            try:
+                payload: object = response.json()
+                if not isinstance(payload, list):
+                    raise TypeError("Invalid task collection")
+            except (TypeError, ValueError) as error:
+                raise TaskPersistenceError(error_message) from error
+            rows.extend(payload)
+            if len(payload) < page_size:
+                return tuple(rows)
+            offset += page_size
 
     @staticmethod
     def _serialize_task(task: Task) -> dict[str, object]:
