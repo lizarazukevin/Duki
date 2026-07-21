@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Mood-based productivity backend"
 requires-python = ">=3.14,<3.15"
 dependencies = [
+    "cryptography>=46,<51",
     "fastapi>=0.116,<1",
     "httpx>=0.28,<1",
     "uvicorn>=0.35,<1",

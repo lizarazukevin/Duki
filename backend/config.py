@@ -11,6 +11,8 @@ class Settings:
     auth_enabled: bool
     supabase_url: str | None
     supabase_publishable_key: str | None
+    supabase_secret_key: str | None
+    credential_encryption_keys: tuple[str, ...]
     allowed_oauth_redirect_hosts: frozenset[str]
 
     @property
@@ -29,6 +31,12 @@ def get_settings() -> Settings:
         auth_enabled=_is_enabled(os.getenv("AUTH_ENABLED", "false")),
         supabase_url=os.getenv("SUPABASE_URL"),
         supabase_publishable_key=os.getenv("SUPABASE_PUBLISHABLE_KEY"),
+        supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY"),
+        credential_encryption_keys=tuple(
+            key.strip()
+            for key in os.getenv("CREDENTIAL_ENCRYPTION_KEYS", "").split(",")
+            if key.strip()
+        ),
         allowed_oauth_redirect_hosts=frozenset(
             host.strip().lower()
             for host in os.getenv("ALLOWED_OAUTH_REDIRECT_HOSTS", "localhost,127.0.0.1").split(",")
