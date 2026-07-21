@@ -5,6 +5,26 @@ class DukiError(Exception):
     status_code = 400
 
 
+class TranscriptionError(DukiError):
+    code = "transcription_failed"
+    status_code = 503
+
+
+class TaskExtractionError(DukiError):
+    code = "task_extraction_failed"
+    status_code = 503
+
+
+class DuckSessionNotFoundError(DukiError):
+    code = "duck_session_not_found"
+    status_code = 404
+
+
+class DuckSessionPersistenceError(DukiError):
+    code = "duck_session_persistence_unavailable"
+    status_code = 503
+
+
 class AuthConfigurationError(DukiError):
     code = "auth_configuration_error"
     status_code = 503
