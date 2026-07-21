@@ -22,6 +22,14 @@ body {
   font-variation-settings: "wdth" 100;
 }
 
+body:has(.home-page[data-period="day"]) {
+  background: #cfe8f6;
+}
+
+body:has(.home-page[data-period="night"]) {
+  background: #102a43;
+}
+
 button,
 a {
   font: inherit;
@@ -268,19 +276,37 @@ a {
 }
 
 .home-page {
+  --app-bg: #cfe8f6;
+  --app-surface: #f7fbfd;
+  --app-ink: #17324d;
+  --app-muted: #5c7488;
+  --app-accent: #f6c945;
+  --app-shadow: rgb(30 74 104 / 16%);
   width: min(100%, 560px);
   min-height: 100svh;
   margin: 0 auto;
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--app-bg);
+  color: var(--app-ink);
   padding: 22px 22px 92px;
+  transition:
+    background 600ms ease,
+    color 600ms ease;
+}
+
+.home-page[data-period="night"] {
+  --app-bg: #102a43;
+  --app-surface: #193b5a;
+  --app-ink: #eef7fb;
+  --app-muted: #aac4d6;
+  --app-accent: #f6c945;
+  --app-shadow: rgb(2 12 27 / 35%);
 }
 
 .home-header {
   display: flex;
   justify-content: space-between;
   align-items: start;
-  border-top: 1px solid var(--signal);
+  border-top: 1px solid var(--app-ink);
   padding-top: 12px;
 }
 
@@ -294,7 +320,7 @@ a {
 
 .home-kicker,
 .section-heading p {
-  color: var(--signal);
+  color: var(--app-muted);
   font-size: 0.62rem;
   font-weight: 740;
   letter-spacing: 0.12em;
@@ -309,9 +335,9 @@ a {
 
 .home-header button {
   border: 0;
-  border-bottom: 1px solid var(--paper);
+  border-bottom: 1px solid var(--app-ink);
   background: transparent;
-  color: var(--paper);
+  color: var(--app-ink);
   cursor: pointer;
   padding: 2px 0;
   font-size: 0.65rem;
@@ -322,18 +348,20 @@ a {
   position: relative;
   display: grid;
   justify-items: center;
-  min-height: 430px;
-  padding-top: 42px;
+  min-height: 440px;
+  padding-top: 34px;
 }
 
 .thought-bubble {
   position: relative;
   z-index: 2;
   width: min(72%, 330px);
-  justify-self: end;
-  border: 1px solid var(--ink);
-  background: var(--paper);
-  color: var(--ink);
+  justify-self: center;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 18%, transparent);
+  border-radius: 18px;
+  background: var(--app-surface);
+  box-shadow: 0 14px 32px var(--app-shadow);
+  color: var(--app-ink);
   padding: 15px 17px;
   font-size: 0.85rem;
   font-weight: 630;
@@ -342,37 +370,47 @@ a {
 
 .thought-bubble::after {
   position: absolute;
-  right: 28px;
   bottom: -9px;
+  left: 28%;
   width: 18px;
   height: 18px;
-  border-right: 1px solid var(--ink);
-  border-bottom: 1px solid var(--ink);
-  background: var(--paper);
+  border-right: 1px solid color-mix(in srgb, var(--app-ink) 18%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-ink) 18%, transparent);
+  background: var(--app-surface);
   content: "";
   transform: rotate(45deg);
 }
 
 .home-duck-stage {
-  width: 285px;
-  height: 285px;
-  margin-top: -15px;
-  overflow: hidden;
-  border: 1px solid var(--signal);
+  position: relative;
+  width: min(88vw, 360px);
+  height: 315px;
+  margin-top: -10px;
+}
+
+.home-duck-stage::after {
+  position: absolute;
+  right: 16%;
+  bottom: 22px;
+  left: 16%;
+  height: 20px;
   border-radius: 50%;
-  background: var(--paper);
+  background: rgb(16 42 67 / 18%);
+  content: "";
+  filter: blur(11px);
 }
 
 .home-duck {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 40% 66%;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 15px rgb(16 42 67 / 18%));
+  animation: duck-float 5s ease-in-out infinite;
 }
 
 .duck-dialogue > p {
-  align-self: end;
-  color: var(--signal);
+  color: var(--app-muted);
+  margin: 26px 0 34px;
   font-size: 0.85rem;
   font-weight: 630;
 }
@@ -380,8 +418,11 @@ a {
 .quick-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--paper);
-  border-bottom: 1px solid var(--paper);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 12%, transparent);
+  border-radius: 16px;
+  background: var(--app-surface);
+  box-shadow: 0 12px 30px var(--app-shadow);
 }
 
 .quick-stats div {
@@ -391,15 +432,16 @@ a {
 }
 
 .quick-stats div + div {
-  border-left: 1px solid var(--paper);
+  border-left: 1px solid color-mix(in srgb, var(--app-ink) 12%, transparent);
 }
 
 .quick-stats strong {
-  color: var(--signal);
+  color: var(--app-ink);
   font-size: 1.25rem;
 }
 
 .quick-stats span {
+  color: var(--app-muted);
   font-size: 0.58rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -416,6 +458,8 @@ a {
 }
 
 .immediate-work ol {
+  display: grid;
+  gap: 11px;
   margin: 18px 0 0;
   padding: 0;
   list-style: none;
@@ -426,20 +470,32 @@ a {
   grid-template-columns: 28px 1fr auto;
   gap: 8px;
   align-items: center;
-  border-top: 1px solid var(--paper);
-  padding: 15px 0;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 10%, transparent);
+  border-left: 3px solid transparent;
+  border-radius: 15px;
+  background: var(--app-surface);
+  box-shadow: 0 10px 24px var(--app-shadow);
+  padding: 16px 14px;
+}
+
+.immediate-work li.primary-task {
+  border-left-color: var(--app-accent);
+  box-shadow: 0 15px 32px var(--app-shadow);
 }
 
 .immediate-work li span,
 .immediate-work li small {
-  color: var(--signal);
+  color: var(--app-muted);
   font-size: 0.65rem;
 }
 
 .empty-tasks {
-  border-top: 1px solid var(--paper);
+  border: 1px solid color-mix(in srgb, var(--app-ink) 10%, transparent);
+  border-radius: 15px;
+  background: var(--app-surface);
+  box-shadow: 0 10px 24px var(--app-shadow);
   margin: 18px 0 0;
-  padding: 16px 0;
+  padding: 16px;
   font-size: 0.85rem;
 }
 
@@ -451,9 +507,10 @@ a {
   display: grid;
   width: min(100%, 560px);
   grid-template-columns: repeat(5, 1fr);
-  border-top: 1px solid var(--ink);
-  background: var(--signal);
-  color: var(--ink);
+  border-top: 1px solid color-mix(in srgb, var(--app-ink) 12%, transparent);
+  background: var(--app-surface);
+  box-shadow: 0 -12px 30px var(--app-shadow);
+  color: var(--app-muted);
   transform: translateX(-50%);
 }
 
@@ -471,12 +528,23 @@ a {
 }
 
 .home-nav a {
-  background: var(--ink);
-  color: var(--signal);
+  background: var(--app-accent);
+  color: #17324d;
 }
 
 .home-nav button:disabled {
   opacity: 1;
+}
+
+@keyframes duck-float {
+  0%,
+  100% {
+    transform: translateY(2px) rotate(-1deg);
+  }
+
+  50% {
+    transform: translateY(-10px) rotate(1deg);
+  }
 }
 
 .entry-footer {
@@ -598,5 +666,9 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .google-button {
     transition: none;
+  }
+
+  .home-duck {
+    animation: none;
   }
 }

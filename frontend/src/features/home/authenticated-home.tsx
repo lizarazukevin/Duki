@@ -57,6 +57,8 @@ export function AuthenticatedHome() {
     0,
   );
   const firstName = identity.displayName?.split(" ")[0] ?? "there";
+  const currentHour = new Date().getHours();
+  const period = currentHour >= 7 && currentHour < 19 ? "day" : "night";
   const duckMessage = immediateTasks[0]
     ? `“${immediateTasks[0].title}” looks like the clearest place to begin.`
     : "Your day has room. Want to talk through what matters?";
@@ -67,7 +69,7 @@ export function AuthenticatedHome() {
   }
 
   return (
-    <main className="home-page">
+    <main className="home-page" data-period={period}>
       <header className="home-header">
         <div>
           <p className="home-kicker">
@@ -87,10 +89,10 @@ export function AuthenticatedHome() {
           <Image
             alt="Duky, your rubber duck planning partner"
             className="home-duck"
-            height={1402}
+            height={1254}
             priority
-            src="/images/duky-editorial.png"
-            width={1122}
+            src="/images/duky-3d.png"
+            width={1254}
           />
         </div>
         <p>One honest next step is enough.</p>
@@ -121,7 +123,10 @@ export function AuthenticatedHome() {
         {immediateTasks.length ? (
           <ol>
             {immediateTasks.map((task, index) => (
-              <li key={task.id}>
+              <li
+                className={index === 0 ? "primary-task" : undefined}
+                key={task.id}
+              >
                 <span>0{index + 1}</span>
                 <strong>{task.title}</strong>
                 <small>
