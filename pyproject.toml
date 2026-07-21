@@ -5,7 +5,8 @@ description = "Mood-based productivity backend"
 requires-python = ">=3.14,<3.15"
 dependencies = [
     "fastapi>=0.116,<1",
-    "uvicorn[standard]>=0.35,<1",
+    "httpx>=0.28,<1",
+    "uvicorn>=0.35,<1",
 ]
 
 [project.optional-dependencies]
