@@ -19,7 +19,10 @@ from backend.models.duck_sessions import (
     DuckSessionStatus,
     ExtractedTaskTree,
     NormalizedTranscript,
+    SuggestedTaskAction,
+    TaskResolutionSuggestion,
 )
+from backend.models.tasks import Task
 from backend.repositories.duck_sessions import DuckSessionRepository
 from backend.repositories.tasks import TaskRepository
 from backend.services.task_deduplication_service import TaskDeduplicationService
@@ -63,6 +66,7 @@ class DuckSessionService:
             status=DuckSessionStatus.PROCESSING,
             transcript=None,
             root_task_id=None,
+            resolution_suggestions=(),
             failure_code=None,
             finished_at=None,
             created_at=started_at,
@@ -75,32 +79,55 @@ class DuckSessionService:
             raw_transcript = await self._voice_adapter.transcribe(audio_chunks, media_type)
             normalized_transcript = self._transcript_normalization_service.normalize(raw_transcript)
             normalized_text = normalized_transcript.text
-            extracted_tree = await self._extract_with_retry(
-                normalized_transcript,
-                user_identifier=str(user_id),
-            )
-            finished_at = datetime.now(UTC)
             existing_tasks = await self._task_repository.list_tasks(
                 user_id,
                 include_archived=False,
             )
-            reconciled_tree = self._task_deduplication_service.reconcile(
-                user_id,
-                extracted_tree.root,
-                existing_tasks,
-                finished_at,
+            extracted_tree = await self._extract_with_retry(
+                normalized_transcript,
+                user_identifier=str(user_id),
+                open_tasks=existing_tasks,
+            )
+            finished_at = datetime.now(UTC)
+            reconciled_tree = (
+                self._task_deduplication_service.reconcile(
+                    user_id,
+                    extracted_tree.root,
+                    existing_tasks,
+                    finished_at,
+                )
+                if extracted_tree.root is not None
+                else None
             )
             completed_session = replace(
                 session,
                 status=DuckSessionStatus.COMPLETED,
                 transcript=normalized_text,
-                root_task_id=reconciled_tree.root_task_id,
+                root_task_id=(
+                    reconciled_tree.root_task_id if reconciled_tree is not None else None
+                ),
+                resolution_suggestions=(
+                    extracted_tree.resolution_suggestions
+                    + (
+                        (
+                            TaskResolutionSuggestion(
+                                reconciled_tree.root_task_id,
+                                SuggestedTaskAction.COMPLETE,
+                                extracted_tree.root_completion.actual_minutes,
+                                extracted_tree.root_completion.actual_easiness_score,
+                            ),
+                        )
+                        if reconciled_tree is not None
+                        and extracted_tree.root_completion is not None
+                        else ()
+                    )
+                ),
                 finished_at=finished_at,
                 updated_at=finished_at,
             )
             await self._session_repository.complete_session(
                 completed_session,
-                reconciled_tree.new_tasks,
+                reconciled_tree.new_tasks if reconciled_tree is not None else (),
             )
             return completed_session
         except (TranscriptionError, TaskExtractionError) as error:
@@ -111,12 +138,14 @@ class DuckSessionService:
         self,
         transcript: NormalizedTranscript,
         user_identifier: str,
+        open_tasks: tuple[Task, ...],
     ) -> ExtractedTaskTree:
         for attempt in range(TASK_EXTRACTION_ATTEMPTS):
             try:
                 return await self._task_extraction_adapter.extract_tasks(
                     transcript,
                     user_identifier,
+                    open_tasks,
                 )
             except TaskExtractionRateLimitError as error:
                 if attempt + 1 == TASK_EXTRACTION_ATTEMPTS:

@@ -1,6 +1,8 @@
+from collections.abc import Sequence
 from typing import Protocol
 
 from backend.models.duck_sessions import ExtractedTaskTree, NormalizedTranscript
+from backend.models.tasks import Task
 
 
 class TaskExtractionAdapter(Protocol):
@@ -10,4 +12,5 @@ class TaskExtractionAdapter(Protocol):
         self,
         transcript: NormalizedTranscript,
         user_identifier: str,
+        open_tasks: Sequence[Task],
     ) -> ExtractedTaskTree: ...

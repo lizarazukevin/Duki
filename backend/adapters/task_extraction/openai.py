@@ -1,4 +1,5 @@
 import re
+from collections.abc import Sequence
 
 import httpx
 
@@ -6,7 +7,9 @@ from backend.adapters.task_extraction.base import TaskExtractionAdapter
 from backend.adapters.task_extraction.structured import (
     EXTRACTION_INSTRUCTIONS,
     TASK_TREE_SCHEMA,
+    build_extraction_input,
     decode_task_tree,
+    select_open_task_context,
 )
 from backend.constants import DEFAULT_OPENAI_TASK_EXTRACTION_MODEL, OPENAI_API_BASE_URL
 from backend.errors import (
@@ -15,6 +18,7 @@ from backend.errors import (
     TaskExtractionRateLimitError,
 )
 from backend.models.duck_sessions import ExtractedTaskTree, NormalizedTranscript
+from backend.models.tasks import Task
 
 TASK_EXTRACTION_TIMEOUT_SECONDS = 90.0
 _MODEL_PATTERN = re.compile(r"^[A-Za-z0-9._:-]+$")
@@ -43,9 +47,11 @@ class OpenAITaskExtractionAdapter(TaskExtractionAdapter):
         self,
         transcript: NormalizedTranscript,
         user_identifier: str,
+        open_tasks: Sequence[Task],
     ) -> ExtractedTaskTree:
         if not user_identifier or len(user_identifier) > 64:
             raise ValueError("OpenAI safety identifier is invalid")
+        context_tasks = select_open_task_context(open_tasks)
         try:
             response = await self._http_client.post(
                 self._responses_url,
@@ -58,7 +64,7 @@ class OpenAITaskExtractionAdapter(TaskExtractionAdapter):
                     "reasoning": {"effort": "none"},
                     "store": False,
                     "instructions": EXTRACTION_INSTRUCTIONS,
-                    "input": transcript.text,
+                    "input": build_extraction_input(transcript, context_tasks),
                     "safety_identifier": user_identifier,
                     "max_output_tokens": 6000,
                     "text": {
@@ -84,7 +90,10 @@ class OpenAITaskExtractionAdapter(TaskExtractionAdapter):
 
         try:
             response_payload: object = response.json()
-            return decode_task_tree(self._output_text(response_payload))
+            return decode_task_tree(
+                self._output_text(response_payload),
+                frozenset(task.id for task in context_tasks),
+            )
         except TaskExtractionError:
             raise
         except (TypeError, ValueError) as error:

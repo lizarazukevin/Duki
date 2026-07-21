@@ -16,6 +16,42 @@ class DuckSessionStatus(StrEnum):
     FAILED = "failed"
 
 
+class SuggestedTaskAction(StrEnum):
+    COMPLETE = "complete"
+    KEEP_OPEN = "keep_open"
+    ARCHIVE = "archive"
+
+
+@dataclass(frozen=True, slots=True)
+class TaskResolutionSuggestion:
+    task_id: UUID
+    suggested_action: SuggestedTaskAction
+    actual_minutes: int | None
+    actual_easiness_score: int | None
+
+    def __post_init__(self) -> None:
+        if self.actual_minutes is not None and self.actual_minutes <= 0:
+            raise ValueError("Suggested actual duration must be positive")
+        if self.actual_easiness_score is not None and not 1 <= self.actual_easiness_score <= 5:
+            raise ValueError("Suggested actual easiness must be between 1 and 5")
+        if self.suggested_action is not SuggestedTaskAction.COMPLETE and (
+            self.actual_minutes is not None or self.actual_easiness_score is not None
+        ):
+            raise ValueError("Only completion suggestions can include feedback")
+
+
+@dataclass(frozen=True, slots=True)
+class ExtractedCompletionFeedback:
+    actual_minutes: int | None
+    actual_easiness_score: int | None
+
+    def __post_init__(self) -> None:
+        if self.actual_minutes is not None and self.actual_minutes <= 0:
+            raise ValueError("Extracted actual duration must be positive")
+        if self.actual_easiness_score is not None and not 1 <= self.actual_easiness_score <= 5:
+            raise ValueError("Extracted actual easiness must be between 1 and 5")
+
+
 @dataclass(frozen=True, slots=True)
 class RawTranscript:
     """Unprocessed provider-neutral transcription text."""
@@ -64,7 +100,9 @@ class ExtractedTask:
 
 @dataclass(frozen=True, slots=True)
 class ExtractedTaskTree:
-    root: ExtractedTask
+    root: ExtractedTask | None
+    resolution_suggestions: tuple[TaskResolutionSuggestion, ...] = ()
+    root_completion: ExtractedCompletionFeedback | None = None
 
     def __post_init__(self) -> None:
         task_count = 0
@@ -79,7 +117,15 @@ class ExtractedTaskTree:
             for child in task.children:
                 validate_depth(child, depth + 1)
 
-        validate_depth(self.root, 1)
+        if self.root is not None:
+            validate_depth(self.root, 1)
+        if self.root is None and not self.resolution_suggestions:
+            raise ValueError("Extraction must contain a task or resolution")
+        if self.root_completion is not None and self.root is None:
+            raise ValueError("Root completion requires an extracted task")
+        task_ids = [suggestion.task_id for suggestion in self.resolution_suggestions]
+        if len(task_ids) != len(set(task_ids)):
+            raise ValueError("Each open task can have only one suggested resolution")
 
 
 @dataclass(frozen=True, slots=True)
@@ -89,6 +135,7 @@ class DuckSession:
     status: DuckSessionStatus
     transcript: str | None
     root_task_id: UUID | None
+    resolution_suggestions: tuple[TaskResolutionSuggestion, ...]
     failure_code: str | None
     finished_at: datetime | None
     created_at: datetime
@@ -100,12 +147,22 @@ class DuckSession:
         if self.failure_code is not None and not 1 <= len(self.failure_code) <= 100:
             raise ValueError("Duck session failure code is invalid")
         if self.status is DuckSessionStatus.PROCESSING:
-            if self.root_task_id or self.failure_code or self.finished_at:
+            if (
+                self.root_task_id
+                or self.resolution_suggestions
+                or self.failure_code
+                or self.finished_at
+            ):
                 raise ValueError("Processing duck session has terminal state")
         elif self.status is DuckSessionStatus.COMPLETED:
             if self.transcript is None or self.failure_code is not None or self.finished_at is None:
                 raise ValueError("Completed duck session is missing its result")
-        elif self.root_task_id or self.failure_code is None or self.finished_at is None:
+        elif (
+            self.root_task_id
+            or self.resolution_suggestions
+            or self.failure_code is None
+            or self.finished_at is None
+        ):
             raise ValueError("Failed duck session is missing failure state")
 
 

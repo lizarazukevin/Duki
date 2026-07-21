@@ -1,5 +1,6 @@
 import logging
 import re
+from collections.abc import Sequence
 
 import httpx
 
@@ -7,7 +8,9 @@ from backend.adapters.task_extraction.base import TaskExtractionAdapter
 from backend.adapters.task_extraction.structured import (
     EXTRACTION_INSTRUCTIONS,
     TASK_TREE_SCHEMA,
+    build_extraction_input,
     decode_task_tree,
+    select_open_task_context,
 )
 from backend.constants import DEFAULT_GROQ_TASK_EXTRACTION_MODEL, GROQ_API_BASE_URL, LOGGER_NAME
 from backend.errors import (
@@ -16,6 +19,7 @@ from backend.errors import (
     TaskExtractionRateLimitError,
 )
 from backend.models.duck_sessions import ExtractedTaskTree, NormalizedTranscript
+from backend.models.tasks import Task
 
 TASK_EXTRACTION_TIMEOUT_SECONDS = 90.0
 MAX_RETRY_AFTER_SECONDS = 10.0
@@ -47,9 +51,11 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
         self,
         transcript: NormalizedTranscript,
         user_identifier: str,
+        open_tasks: Sequence[Task],
     ) -> ExtractedTaskTree:
         if not user_identifier or len(user_identifier) > 64:
             raise ValueError("Task extraction user identifier is invalid")
+        context_tasks = select_open_task_context(open_tasks)
         try:
             response = await self._http_client.post(
                 self._completions_url,
@@ -61,7 +67,10 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
                     "model": self._model,
                     "messages": [
                         {"role": "system", "content": EXTRACTION_INSTRUCTIONS},
-                        {"role": "user", "content": transcript.text},
+                        {
+                            "role": "user",
+                            "content": build_extraction_input(transcript, context_tasks),
+                        },
                     ],
                     "max_completion_tokens": 6000,
                     "response_format": {
@@ -97,7 +106,10 @@ class GroqTaskExtractionAdapter(TaskExtractionAdapter):
 
         try:
             response_payload: object = response.json()
-            return decode_task_tree(self._message_content(response_payload))
+            return decode_task_tree(
+                self._message_content(response_payload),
+                frozenset(task.id for task in context_tasks),
+            )
         except TaskExtractionError:
             raise
         except (TypeError, ValueError) as error:

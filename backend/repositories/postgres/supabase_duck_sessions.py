@@ -5,7 +5,12 @@ from uuid import UUID
 import httpx
 
 from backend.errors import DuckSessionNotFoundError, DuckSessionPersistenceError
-from backend.models.duck_sessions import DuckSession, DuckSessionStatus
+from backend.models.duck_sessions import (
+    DuckSession,
+    DuckSessionStatus,
+    SuggestedTaskAction,
+    TaskResolutionSuggestion,
+)
 from backend.models.tasks import Task
 from backend.repositories.duck_sessions import DuckSessionRepository
 
@@ -45,11 +50,7 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
     ) -> None:
         if session.status is not DuckSessionStatus.COMPLETED:
             raise ValueError("Only a completed duck session can commit generated tasks")
-        if (
-            session.transcript is None
-            or session.root_task_id is None
-            or session.finished_at is None
-        ):
+        if session.transcript is None or session.finished_at is None:
             raise ValueError("Completed duck session is missing persistence data")
         await self._write(
             "post",
@@ -61,6 +62,10 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
                 "p_root_task_id": str(session.root_task_id),
                 "p_finished_at": session.finished_at.isoformat(),
                 "p_tasks": [self._serialize_generated_task(task) for task in tasks],
+                "p_resolution_suggestions": [
+                    self._serialize_resolution(suggestion)
+                    for suggestion in session.resolution_suggestions
+                ],
             },
         )
 
@@ -120,6 +125,10 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
             "status": session.status.value,
             "transcript": session.transcript,
             "root_task_id": str(session.root_task_id) if session.root_task_id else None,
+            "resolution_suggestions": [
+                SupabaseDuckSessionRepository._serialize_resolution(suggestion)
+                for suggestion in session.resolution_suggestions
+            ],
             "failure_code": session.failure_code,
             "finished_at": session.finished_at.isoformat() if session.finished_at else None,
             "created_at": session.created_at.isoformat(),
@@ -143,6 +152,17 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
         }
 
     @staticmethod
+    def _serialize_resolution(
+        suggestion: TaskResolutionSuggestion,
+    ) -> dict[str, object]:
+        return {
+            "task_id": str(suggestion.task_id),
+            "suggested_action": suggestion.suggested_action.value,
+            "actual_minutes": suggestion.actual_minutes,
+            "actual_easiness_score": suggestion.actual_easiness_score,
+        }
+
+    @staticmethod
     def _parse_session(row: object) -> DuckSession:
         if not isinstance(row, dict):
             raise TypeError("Invalid duck session row")
@@ -152,6 +172,7 @@ class SupabaseDuckSessionRepository(DuckSessionRepository):
             status=DuckSessionStatus(_required_string(row, "status")),
             transcript=_optional_string(row, "transcript"),
             root_task_id=_optional_uuid(row, "root_task_id"),
+            resolution_suggestions=_parse_resolutions(row.get("resolution_suggestions")),
             failure_code=_optional_string(row, "failure_code"),
             finished_at=_optional_datetime(row, "finished_at"),
             created_at=datetime.fromisoformat(_required_string(row, "created_at")),
@@ -181,3 +202,28 @@ def _optional_uuid(row: dict[str, object], field: str) -> UUID | None:
 def _optional_datetime(row: dict[str, object], field: str) -> datetime | None:
     value = _optional_string(row, field)
     return datetime.fromisoformat(value) if value else None
+
+
+def _parse_resolutions(value: object) -> tuple[TaskResolutionSuggestion, ...]:
+    if not isinstance(value, list):
+        raise TypeError("Invalid duck session resolutions")
+    suggestions: list[TaskResolutionSuggestion] = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise TypeError("Invalid duck session resolution")
+        suggestions.append(
+            TaskResolutionSuggestion(
+                task_id=UUID(_required_string(item, "task_id")),
+                suggested_action=SuggestedTaskAction(_required_string(item, "suggested_action")),
+                actual_minutes=_optional_int(item, "actual_minutes"),
+                actual_easiness_score=_optional_int(item, "actual_easiness_score"),
+            )
+        )
+    return tuple(suggestions)
+
+
+def _optional_int(row: dict[str, object], field: str) -> int | None:
+    value = row.get(field)
+    if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
+        raise TypeError("Invalid optional duck session number")
+    return value

@@ -20,3 +20,8 @@ switches that individual stage to OpenAI without an automatic fallback.
 `OPENAI_TRANSCRIPTION_MODEL`, and `OPENAI_TASK_EXTRACTION_MODEL` may override their
 default models when needed. Enable Zero Data Retention in Groq Data Controls before
 processing user audio outside local development.
+
+Each duck session is an ad hoc debrief. It can return suggested `complete`,
+`keep_open`, or `archive` actions for matching open tasks, but it does not change task
+state until the user confirms those suggestions. Completed work that was not planned is
+captured as a new task with its completion feedback preserved for confirmation.
