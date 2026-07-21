@@ -5,9 +5,11 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from backend.adapters.auth.supabase import (
+    SupabaseAuthorizationCodeExchangeAdapter,
     SupabaseGoogleAuthorizationAdapter,
     SupabaseSessionValidationAdapter,
 )
+from backend.adapters.security.fernet import FernetCredentialCipher
 from backend.config import Settings
 from backend.errors import (
     AuthConfigurationError,
@@ -15,9 +17,11 @@ from backend.errors import (
     FeatureDisabledError,
 )
 from backend.models.auth import AuthenticatedUser
+from backend.repositories.postgres.supabase_auth import SupabaseAuthRepository
 from backend.services.identity_authorization_service import (
     IdentityAuthorizationService,
 )
+from backend.services.session_exchange_service import SessionExchangeService
 from backend.services.session_validation_service import SessionValidationService
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -55,6 +59,31 @@ def provide_session_validation_service(request: Request) -> SessionValidationSer
             supabase_url=settings.supabase_url or "",
             publishable_key=settings.supabase_publishable_key,
         )
+    )
+
+
+def provide_session_exchange_service(request: Request) -> SessionExchangeService:
+    """Compose PKCE exchange with encrypted provider-credential persistence."""
+    settings = _auth_settings(request)
+    if not settings.supabase_publishable_key:
+        raise AuthConfigurationError("Supabase publishable key is not configured")
+    if not settings.supabase_secret_key:
+        raise AuthConfigurationError("Supabase secret key is not configured")
+    if not settings.credential_encryption_keys:
+        raise AuthConfigurationError("Credential encryption is not configured")
+    http_client = cast(httpx.AsyncClient, request.app.state.http_client)
+    return SessionExchangeService(
+        exchange_adapter=SupabaseAuthorizationCodeExchangeAdapter(
+            http_client=http_client,
+            supabase_url=settings.supabase_url or "",
+            publishable_key=settings.supabase_publishable_key,
+        ),
+        auth_repository=SupabaseAuthRepository(
+            http_client=http_client,
+            supabase_url=settings.supabase_url or "",
+            secret_key=settings.supabase_secret_key,
+            credential_cipher=FernetCredentialCipher(settings.credential_encryption_keys),
+        ),
     )
 
 
