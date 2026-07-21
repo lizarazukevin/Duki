@@ -24,6 +24,11 @@ class AudioTooLargeError(TranscriptionError):
     status_code = 422
 
 
+class NoSpeechDetectedError(TranscriptionError):
+    code = "no_speech_detected"
+    status_code = 422
+
+
 class TaskExtractionError(DukiError):
     code = "task_extraction_failed"
     status_code = 503
