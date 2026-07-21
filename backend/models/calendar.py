@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
+from backend.models.auth import GoogleCredentials
+
 
 class CalendarEventStatus(StrEnum):
     CONFIRMED = "confirmed"
@@ -31,3 +33,12 @@ class CalendarEvent:
     status: CalendarEventStatus
     transparency: CalendarEventTransparency
     provider_updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class CalendarFetchResult:
+    """Normalized changes from one complete provider pagination cycle."""
+
+    events: tuple[CalendarEvent, ...]
+    cancelled_event_ids: tuple[str, ...]
+    refreshed_credentials: GoogleCredentials | None

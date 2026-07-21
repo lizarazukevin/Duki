@@ -1,4 +1,5 @@
 from typing import Protocol
+from uuid import UUID
 
 from backend.models.auth import AuthenticatedUser, GoogleCredentials
 
@@ -12,3 +13,5 @@ class AuthRepository(Protocol):
         self,
         credentials: GoogleCredentials,
     ) -> None: ...
+
+    async def get_google_credentials(self, user_id: UUID) -> GoogleCredentials: ...

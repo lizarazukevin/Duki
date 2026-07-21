@@ -15,6 +15,26 @@ class CalendarPersistenceError(DukiError):
     status_code = 503
 
 
+class CalendarAuthorizationError(DukiError):
+    code = "calendar_authorization_failed"
+    status_code = 401
+
+
+class CalendarRateLimitError(DukiError):
+    code = "calendar_rate_limited"
+    status_code = 503
+
+
+class CalendarUnavailableError(DukiError):
+    code = "calendar_unavailable"
+    status_code = 503
+
+
+class GoogleCredentialsNotFoundError(DukiError):
+    code = "google_credentials_not_found"
+    status_code = 409
+
+
 class AuthenticationError(DukiError):
     code = "invalid_session"
     status_code = 401
