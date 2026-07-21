@@ -10,6 +10,7 @@ class Settings:
     app_environment: str
     auth_enabled: bool
     calendar_sync_enabled: bool
+    tasks_enabled: bool
     supabase_url: str | None
     supabase_publishable_key: str | None
     supabase_secret_key: str | None
@@ -33,6 +34,7 @@ def get_settings() -> Settings:
         app_environment=os.getenv("APP_ENV", "local").lower(),
         auth_enabled=_is_enabled(os.getenv("AUTH_ENABLED", "false")),
         calendar_sync_enabled=_is_enabled(os.getenv("CALENDAR_SYNC_ENABLED", "false")),
+        tasks_enabled=_is_enabled(os.getenv("TASKS_ENABLED", "false")),
         supabase_url=os.getenv("SUPABASE_URL"),
         supabase_publishable_key=os.getenv("SUPABASE_PUBLISHABLE_KEY"),
         supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY"),

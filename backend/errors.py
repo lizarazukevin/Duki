@@ -80,6 +80,11 @@ class TaskNotFoundError(DukiError):
     status_code = 404
 
 
+class TaskConfigurationError(DukiError):
+    code = "task_configuration_error"
+    status_code = 503
+
+
 class TaskPersistenceError(DukiError):
     code = "task_persistence_unavailable"
     status_code = 503
