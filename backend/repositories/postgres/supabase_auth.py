@@ -53,7 +53,11 @@ class SupabaseAuthRepository(AuthRepository):
                 "encrypted_refresh_token": self._credential_cipher.encrypt(
                     credentials.refresh_token
                 ),
-                "access_token_expires_at": (credentials.access_token_expires_at.isoformat()),
+                "access_token_expires_at": (
+                    credentials.access_token_expires_at.isoformat()
+                    if credentials.access_token_expires_at
+                    else None
+                ),
                 "updated_at": datetime.now(UTC).isoformat(),
             },
         )

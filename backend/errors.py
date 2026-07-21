@@ -15,6 +15,11 @@ class AuthenticationError(DukiError):
     status_code = 401
 
 
+class AuthorizationExchangeError(DukiError):
+    code = "authorization_exchange_failed"
+    status_code = 401
+
+
 class CredentialEncryptionError(DukiError):
     code = "credential_encryption_failed"
     status_code = 500
