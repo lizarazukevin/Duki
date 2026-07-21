@@ -75,6 +75,26 @@ class PersistenceError(DukiError):
     status_code = 503
 
 
+class TaskNotFoundError(DukiError):
+    code = "task_not_found"
+    status_code = 404
+
+
+class TaskPersistenceError(DukiError):
+    code = "task_persistence_unavailable"
+    status_code = 503
+
+
+class GoalNotFoundError(DukiError):
+    code = "goal_not_found"
+    status_code = 404
+
+
+class GoalPersistenceError(DukiError):
+    code = "goal_persistence_unavailable"
+    status_code = 503
+
+
 class RedirectNotAllowedError(DukiError):
     code = "redirect_not_allowed"
     status_code = 422
