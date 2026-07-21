@@ -8,6 +8,16 @@ For every task completed, it should be commit-sized for review (less than 700 li
 1. Update the README with any changes that needs to be documented ONLY important to customer-facing
 2. Provide a description of what changed, why it changed, and short bullet point of how it occurred
 3. ALWAYS ask for confirmation on changes, only the user has permission to commit
+4. Update the local, untracked `JOURNEY.md` with the proposed commit's changes and
+   verification. After the user commits, replace the pending label with the commit
+   identifier when it is available.
+5. Always provide a concise conventional commit message when presenting a completed
+   step for confirmation.
+
+Treat 700 lines as a hard worst-case ceiling, not a target. Split roadmap phases into
+small, gradual commits with one reviewable concern each (for example: scaffolding,
+then auth integration, then persistence/RLS). Prefer the smallest independently
+verifiable change before moving to the next concern.
 
 ## Scope Right Now: Backend Only
 Do not modify `frontend/` or generate frontend code unless explicitly asked. All work happens in `backend/` per the established layout: `routers/ → services/ → adapters/ + repositories/ → models/ + schemas/`. Routers contain no business logic; services never construct their own adapters/repos (constructor-injected only).
@@ -64,6 +74,38 @@ Default to what's already in the stack (FastAPI, Pydantic, the async DB client, 
 - PEP 8, explicit naming, no ambiguous abbreviations.
 - Every function fully type-hinted (args + return), modern `typing`/3.10+ syntax.
 - Business logic (scheduling math, mood computation, estimate-delta calculations) written as pure functions wherever possible — deterministic, no hidden I/O — even without a formal test suite, this keeps them easy to reason about and cheap to test later if needed.
+
+## RESTful API Conventions
+Consistency here matters more than cleverness — the frontend agent (and Postman testing) depends on every endpoint following the same shape without having to check each one individually.
+
+### Naming & structure
+- Plural nouns, lowercase, hyphenated for multi-word resources: /tasks, /duck-sessions, /calendar-events — never verbs in the path (/getTasks is wrong).
+- No deep nesting. Tasks are a tree via parent_task_id, but that's a query filter, not a URL shape: GET /tasks?parent_id={id}, not /tasks/{id}/subtasks/{id}/subtasks. One level of nesting max, and only when the child is genuinely inseparable from the parent (e.g. /tasks/{id}/events for that task's audit trail is fine).
+- Actions that don't map to plain CRUD are a POST on a sub-path, not a new verb-based resource: POST /tasks/{id}/complete, POST /duck-sessions/{id}/extract — not /completeTask.
+- Version the API from day one: everything under /api/v1/. Costs nothing now, saves a breaking migration later when the schema inevitably shifts.
+
+### HTTP methods & status codes
+- GET (read, no side effects), POST (create / non-CRUD actions), PATCH (partial update — not PUT, since we're almost never replacing a full resource), DELETE.
+- Standard codes only: 200 (ok), 201 (created, return the resource + Location header), 204 (deleted, no body), 400 (malformed request), 401 (no/invalid auth), 403 (authenticated but not authorized — e.g. someone else's task), 404 (not found), 409 (conflict, e.g. duplicate), 422 (valid shape, invalid semantics — Pydantic validation lands here), 500 only ever from the global exception handler, never raised intentionally.
+- Every error response uses the same envelope, everywhere: {"error": "human message", "code": "MACHINE_CODE", "details": {...}} — matches the graceful-error-handling rule, don't invent a one-off shape per endpoint.
+
+### Pagination
+- Every list endpoint is paginated by default — never return an unbounded array, especially task_events and calendar_events, which grow without bound.
+- Cursor-based, not offset-based (offset pagination degrades and gets inconsistent under concurrent writes, which matters once sync jobs are running). Query params: ?limit=20&cursor=.... Response shape: {"items": [...], "next_cursor": "..." | null}.
+- Single-item responses return the resource directly (not wrapped in items) — don't mix envelope shapes between list and detail endpoints.
+
+### Filtering & sorting
+- Plain query params, named after the field: ?status=in_progress&category=work&sort=-created_at (- prefix for descending). Don't invent a custom query language for this app's scale.
+
+### IDs & timestamps
+- UUIDs in the path always, never sequential integers exposed externally — ties directly to the closed-first/security rules, since sequential IDs leak record counts and enable enumeration.
+- All timestamps ISO 8601, UTC, timezone-aware — never naive datetimes, never a different format per endpoint.
+- PEP 8, explicit naming, no ambiguous abbreviations.
+- Every function fully type-hinted (args + return), modern typing/3.10+ syntax.
+- Business logic (scheduling math, mood computation, estimate-delta calculations) written as pure functions wherever possible — deterministic, no hidden I/O — even without a formal test suite, this keeps them easy to reason about and cheap to test later if needed.
+
+### Security
+- Have user-detail facing apis be protected by enforcing role based access control methods
 
 ## Output Format
 When responding to a coding task, always follow this order:
