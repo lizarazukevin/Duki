@@ -2,7 +2,7 @@ import json
 import unittest
 from datetime import UTC, datetime
 from urllib.parse import parse_qs, urlparse
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import httpx
 from pydantic import ValidationError
@@ -247,6 +247,9 @@ class _RecordingAuthRepository:
 
     async def save_google_credentials(self, credentials: GoogleCredentials) -> None:
         self.credentials = credentials
+
+    async def get_google_credentials(self, user_id: UUID) -> GoogleCredentials:
+        raise AssertionError("Credential loading is not expected in this test")
 
 
 class SessionExchangeServiceTests(unittest.IsolatedAsyncioTestCase):

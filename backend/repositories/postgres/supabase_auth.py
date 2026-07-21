@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 import httpx
 
 from backend.adapters.security.base import CredentialCipher
-from backend.errors import PersistenceError
+from backend.errors import GoogleCredentialsNotFoundError, PersistenceError
 from backend.models.auth import AuthenticatedUser, GoogleCredentials
 from backend.repositories.auth import AuthRepository
 
@@ -61,6 +62,52 @@ class SupabaseAuthRepository(AuthRepository):
                 "updated_at": datetime.now(UTC).isoformat(),
             },
         )
+
+    async def get_google_credentials(self, user_id: UUID) -> GoogleCredentials:
+        try:
+            response = await self._http_client.get(
+                f"{self._rest_url}/google_credentials",
+                params={
+                    "select": (
+                        "encrypted_access_token,encrypted_refresh_token,access_token_expires_at"
+                    ),
+                    "user_id": f"eq.{user_id}",
+                    "limit": "1",
+                },
+                headers={"apikey": self._headers["apikey"]},
+            )
+        except (httpx.TimeoutException, httpx.NetworkError, httpx.ProtocolError) as error:
+            raise PersistenceError("Google credentials could not be loaded") from error
+        if response.status_code >= 400:
+            raise PersistenceError("Google credentials could not be loaded")
+        try:
+            payload: object = response.json()
+            if not isinstance(payload, list) or not payload:
+                raise GoogleCredentialsNotFoundError("Google Calendar is not connected")
+            row = payload[0]
+            if not isinstance(row, dict):
+                raise TypeError("Invalid credential row")
+            encrypted_access_token = row["encrypted_access_token"]
+            encrypted_refresh_token = row["encrypted_refresh_token"]
+            expires_at = row.get("access_token_expires_at")
+            if not isinstance(encrypted_access_token, str) or not isinstance(
+                encrypted_refresh_token, str
+            ):
+                raise TypeError("Invalid encrypted credential")
+            if expires_at is not None and not isinstance(expires_at, str):
+                raise TypeError("Invalid credential expiry")
+            return GoogleCredentials(
+                user_id=user_id,
+                access_token=self._credential_cipher.decrypt(encrypted_access_token),
+                refresh_token=self._credential_cipher.decrypt(encrypted_refresh_token),
+                access_token_expires_at=(
+                    datetime.fromisoformat(expires_at) if expires_at is not None else None
+                ),
+            )
+        except GoogleCredentialsNotFoundError:
+            raise
+        except (KeyError, TypeError, ValueError) as error:
+            raise PersistenceError("Stored Google credentials are invalid") from error
 
     async def _upsert(
         self,

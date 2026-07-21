@@ -12,6 +12,8 @@ class Settings:
     supabase_url: str | None
     supabase_publishable_key: str | None
     supabase_secret_key: str | None
+    google_oauth_client_id: str | None
+    google_oauth_client_secret: str | None
     credential_encryption_keys: tuple[str, ...]
     allowed_oauth_redirect_hosts: frozenset[str]
 
@@ -32,6 +34,8 @@ def get_settings() -> Settings:
         supabase_url=os.getenv("SUPABASE_URL"),
         supabase_publishable_key=os.getenv("SUPABASE_PUBLISHABLE_KEY"),
         supabase_secret_key=os.getenv("SUPABASE_SECRET_KEY"),
+        google_oauth_client_id=os.getenv("GOOGLE_OAUTH_CLIENT_ID"),
+        google_oauth_client_secret=os.getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
         credential_encryption_keys=tuple(
             key.strip()
             for key in os.getenv("CREDENTIAL_ENCRYPTION_KEYS", "").split(",")
