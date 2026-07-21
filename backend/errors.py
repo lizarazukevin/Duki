@@ -166,6 +166,16 @@ class GoalPersistenceError(DukiError):
     status_code = 503
 
 
+class MoodNotFoundError(DukiError):
+    code = "mood_not_found"
+    status_code = 404
+
+
+class MoodPersistenceError(DukiError):
+    code = "mood_persistence_unavailable"
+    status_code = 503
+
+
 class RedirectNotAllowedError(DukiError):
     code = "redirect_not_allowed"
     status_code = 422
